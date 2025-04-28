@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APT [Ayra Push Talk]</title>
+    <style>
+        :root {
+            --bg-color: #f0f0f0;
+            --text-color: #333;
+            --tile-text-color: white;
+            --modal-bg: white;
+            --modal-text: #333;
+        }
+
+        .dark-mode {
+            --bg-color: #121212;
+            --text-color: #f0f0f0;
+            --tile-text-color: white;
+            --modal-bg: #242424;
+            --modal-text: #f0f0f0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        h1 {
+            color: #0078d7;
+            margin-bottom: 30px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: flex-end;
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 20px;
+        }
+        
+        .settings-btn {
+            background-color: #0078d7;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .settings-btn:hover {
+            background-color: #106ebe;
+        }
+        
+        .tile-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            max-width: 800px;
+            margin-bottom: 30px;
+        }
+        
+        .tile {
+            background-color: #0078d7;
+            color: var(--tile-text-color);
+            border-radius: 5px;
+            padding: 20px;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .tile:hover {
+            transform: scale(1.05);
+            background-color: #106ebe;
+        }
+        
+        .tile:active {
+            transform: scale(0.98);
+        }
+        
+        .tile:nth-child(2) {
+            background-color: #e81123;
+        }
+        
+        .tile:nth-child(2):hover {
+            background-color: #c50f1f;
+        }
+        
+        .tile:nth-child(3) {
+            background-color: #107c10;
+        }
+        
+        .tile:nth-child(3):hover {
+            background-color: #0e6e0e;
+        }
+        
+        .tile:nth-child(4) {
+            background-color: #ffb900;
+            color: #333;
+        }
+        
+        .tile:nth-child(4):hover {
+            background-color: #e6a700;
+        }
+        
+        .tile:nth-child(5) {
+            background-color: #744da9;
+        }
+        
+        .tile:nth-child(5):hover {
+            background-color: #5e3d8a;
+        }
+        
+        .tile:nth-child(6) {
+            background-color: #ff8c00;
+        }
+        
+        .tile:nth-child(6):hover {
+            background-color: #e67e00;
+        }
+        
+        .tile:nth-child(7) {
+            background-color: #0099bc;
+        }
+        
+        .tile:nth-child(7):hover {
+            background-color: #0082a0;
+        }
+        
+        .tile:nth-child(8) {
+            background-color: #e3008c;
+        }
+        
+        .tile:nth-child(8):hover {
+            background-color: #c30078;
+        }
+        
+        .edit-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .tile:hover .edit-btn {
+            opacity: 1;
+        }
+        
+        .edit-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background-color: var(--modal-bg);
+            color: var(--modal-text);
+            padding: 20px;
+            border-radius: 5px;
+            width: 300px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .modal-content h2 {
+            margin-top: 0;
+            color: #0078d7;
+        }
+        
+        .modal-content input[type="text"],
+        .modal-content select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            background-color: var(--modal-bg);
+            color: var(--modal-text);
+        }
+        
+        .setting-group {
+            margin-bottom: 20px;
+        }
+        
+        .setting-group h3 {
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .volume-slider {
+            flex-grow: 1;
+        }
+        
+        .theme-options {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .theme-btn {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            flex: 1;
+            text-align: center;
+        }
+        
+        .theme-btn.active {
+            border-color: #0078d7;
+            background-color: #0078d7;
+            color: white;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .modal-buttons button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .save-btn {
+            background-color: #0078d7;
+            color: white;
+        }
+        
+        .cancel-btn {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+        
+        @media (max-width: 768px) {
+            .tile-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Ayra Push Talk</h1>
+    
+    <div class="controls">
+        <button class="settings-btn" id="settingsBtn">
+            ⚙️ Settings
+        </button>
+    </div>
+    
+    <div class="tile-container">
+        <div class="tile" data-text="Yes">
+            Yes
+            <button class="edit-btn">✏️</button>
+        </div>
+        <div class="tile" data-text="No">
+            No
+            <button class="edit-btn">✏️</button>
+        </div>
+        <div class="tile" data-text="Thank you">
+            Thank you
+            <button class="edit-btn">✏️</button>
+        </div>
+        <div class="tile" data-text="I am hungry">
+            I am hungry
+            <button class="edit-btn">✏️</button>
+        </div>
+        <div class="tile" data-text="Good morning">
+            Good morning
+            <button class="edit-btn">✏️</button>
+        </div>
+        <div class="tile" data-text="I need help">
+            I need help
+            <button class="edit-btn">✏️</button>
+        </div>
+        <div class="tile" data-text="I need explanation">
+            I need explanation
+            <button class="edit-btn">✏️</button>
+        </div>
+        <div class="tile" data-text="I am sorry">
+            I am sorry
+            <button class="edit-btn">✏️</button>
+        </div>
+    </div>
+    
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <h2>Edit Tile Text</h2>
+            <input type="text" id="editInput">
+            <div class="modal-buttons">
+                <button class="cancel-btn">Cancel</button>
+                <button class="save-btn">Save</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <h2>Settings</h2>
+            
+            <div class="setting-group">
+                <h3>Volume</h3>
+                <div class="volume-control">
+                    <span>🔊</span>
+                    <input type="range" min="0" max="1" step="0.1" value="1" class="volume-slider" id="volumeSlider">
+                    <span id="volumeValue">100%</span>
+                </div>
+            </div>
+            
+            <div class="setting-group">
+                <h3>Theme</h3>
+                <div class="theme-options">
+                    <div class="theme-btn active" data-theme="light">Light</div>
+                    <div class="theme-btn" data-theme="dark">Dark</div>
+                </div>
+            </div>
+            
+            <div class="modal-buttons">
+                <button class="cancel-btn" id="settingsCancelBtn">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Speech synthesis function with volume control
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.volume = currentVolume;
+            window.speechSynthesis.speak(utterance);
+        }
+        
+        // Settings
+        let currentVolume = 1;
+        let currentTheme = 'light';
+        
+        // Initialize settings from localStorage if available
+        if (localStorage.getItem('ttsVolume')) {
+            currentVolume = parseFloat(localStorage.getItem('ttsVolume'));
+            document.getElementById('volumeSlider').value = currentVolume;
+            document.getElementById('volumeValue').textContent = `${Math.round(currentVolume * 100)}%`;
+        }
+        
+        if (localStorage.getItem('ttsTheme')) {
+            currentTheme = localStorage.getItem('ttsTheme');
+            if (currentTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                document.querySelector('.theme-btn[data-theme="dark"]').classList.add('active');
+                document.querySelector('.theme-btn[data-theme="light"]').classList.remove('active');
+            }
+        }
+        
+        // Volume control
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volumeValue = document.getElementById('volumeValue');
+        
+        volumeSlider.addEventListener('input', function() {
+            currentVolume = parseFloat(this.value);
+            volumeValue.textContent = `${Math.round(currentVolume * 100)}%`;
+            localStorage.setItem('ttsVolume', currentVolume);
+            
+            // Speak a test phrase when volume changes
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+                speak("Volume test");
+            }
+        });
+        
+        // Theme control
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const theme = this.getAttribute('data-theme');
+                currentTheme = theme;
+                localStorage.setItem('ttsTheme', theme);
+                
+                if (theme === 'dark') {
+                    document.body.classList.add('dark-mode');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                }
+                
+                document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+        
+        // Settings modal
+        document.getElementById('settingsBtn').addEventListener('click', function() {
+            document.getElementById('settingsModal').style.display = 'flex';
+        });
+        
+        document.getElementById('settingsCancelBtn').addEventListener('click', function() {
+            document.getElementById('settingsModal').style.display = 'none';
+        });
+        
+        // Tile click handler
+        document.querySelectorAll('.tile').forEach(tile => {
+            tile.addEventListener('click', function() {
+                const text = this.getAttribute('data-text');
+                speak(text);
+            });
+        });
+        
+        // Edit functionality
+        let currentTile = null;
+        
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation(); // Prevent tile click from firing
+                currentTile = this.parentElement;
+                const currentText = currentTile.getAttribute('data-text');
+                
+                document.getElementById('editInput').value = currentText;
+                document.getElementById('editModal').style.display = 'flex';
+            });
+        });
+        
+        // Modal buttons
+        document.querySelector('.cancel-btn').addEventListener('click', function() {
+            document.getElementById('editModal').style.display = 'none';
+        });
+        
+        document.querySelector('.save-btn').addEventListener('click', function() {
+            const newText = document.getElementById('editInput').value.trim();
+            if (newText && currentTile) {
+                currentTile.setAttribute('data-text', newText);
+                currentTile.textContent = newText;
+                
+                // Re-add the edit button (it was removed when we set textContent)
+                const editBtn = document.createElement('button');
+                editBtn.className = 'edit-btn';
+                editBtn.textContent = '✏️';
+                editBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    currentTile = this.parentElement;
+                    const currentText = currentTile.getAttribute('data-text');
+                    document.getElementById('editInput').value = currentText;
+                    document.getElementById('editModal').style.display = 'flex';
+                });
+                
+                currentTile.appendChild(editBtn);
+            }
+            document.getElementById('editModal').style.display = 'none';
+        });
+        
+        // Close modal when clicking outside
+        document.getElementById('editModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.style.display = 'none';
+            }
+        });
+        
+        document.getElementById('settingsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
