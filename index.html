@@ -1,2866 +1,2676 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="color-scheme" content="light dark" />
-  <meta name="theme-color" content="#111111" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="TalkBoard">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1976D2">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data:; connect-src 'none'; img-src 'self' data: blob:; media-src 'self' blob: data:;">
+<title>TalkBoard AAC</title>
 
-  <title>Talkboard – Text-to-Speech AAC</title>
+<!-- PWA Manifest injected inline -->
+<script>
+(function(){
+  const manifest = {
+    name: "TalkBoard AAC",
+    short_name: "TalkBoard",
+    description: "Augmentative and Alternative Communication app for non-verbal users",
+    start_url: "./",
+    display: "standalone",
+    background_color: "#ffffff",
+    theme_color: "#1976D2",
+    orientation: "any",
+    icons: [
+      { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='24' fill='%231976D2'/%3E%3Ctext y='130' x='96' text-anchor='middle' font-size='120' font-family='Arial'%3E💬%3C/text%3E%3C/svg%3E", sizes: "192x192", type: "image/svg+xml" },
+      { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='64' fill='%231976D2'/%3E%3Ctext y='360' x='256' text-anchor='middle' font-size='320' font-family='Arial'%3E💬%3C/text%3E%3C/svg%3E", sizes: "512x512", type: "image/svg+xml" }
+    ]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+  const link = document.createElement('link');
+  link.rel = 'manifest';
+  link.href = URL.createObjectURL(blob);
+  document.head.appendChild(link);
+})();
+</script>
 
-  <!-- NOTE (Standalone): This file is fully standalone.
-       For best PWA/offline behavior, serve via https or localhost (Service Worker requirement). -->
+<style>
+/* ===== CSS RESET & VARIABLES ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  <style>
-    :root{
-      --bg: #f6f6f7;
-      --surface: #ffffff;
-      --surface2: #fbfbfc;
-      --text: #111113;
-      --muted: #5a5f6a;
-      --border: #e6e7ea;
-      --shadow: 0 8px 30px rgba(16, 24, 40, .08);
-      --shadow2: 0 4px 16px rgba(16, 24, 40, .10);
-      --radius: 18px;
-      --radius2: 14px;
-      --focus: 0 0 0 3px rgba(59, 130, 246, .35);
-      --accent: #3b82f6;
-      --danger: #ef4444;
-      --ok: #22c55e;
+:root {
+  --brand: #1976D2;
+  --brand-dark: #1565C0;
+  --brand-light: #BBDEFB;
+  --accent: #FF6F00;
+  --success: #2E7D32;
+  --danger: #C62828;
+  --warning: #F57F17;
 
-      --tileEmoji: 34px;
-      --tileText: 16px;
+  --bg: #F5F7FA;
+  --surface: #FFFFFF;
+  --surface2: #EEF2F7;
+  --border: #DDE3EC;
+  --text-primary: #1A1D23;
+  --text-secondary: #5A6478;
+  --text-disabled: #A0ABB8;
+  --shadow: 0 2px 8px rgba(0,0,0,0.10);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.13);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.16);
 
-      --container: 1120px;
-      --gap: 12px;
-      --tap: 52px;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-lg: 24px;
+  --tab-h: 60px;
+  --msg-h: 80px;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --touch: 44px;
+}
 
-      --headerH: 66px;
-      --composerH: 94px;
-    }
+[data-theme="dark"] {
+  --bg: #0F1117;
+  --surface: #1C1F2A;
+  --surface2: #252938;
+  --border: #323648;
+  --text-primary: #EDF0F7;
+  --text-secondary: #9BA4B8;
+  --text-disabled: #4A5168;
+  --shadow: 0 2px 8px rgba(0,0,0,0.40);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.50);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.60);
+  --brand-light: #1E3A5F;
+}
 
-    html[data-theme="dark"]{
-      --bg: #0b0b0c;
-      --surface: #141416;
-      --surface2: #101012;
-      --text: #f2f2f3;
-      --muted: #a3a7b2;
-      --border: #26262c;
-      --shadow: 0 10px 36px rgba(0,0,0,.45);
-      --shadow2: 0 4px 18px rgba(0,0,0,.40);
-      --focus: 0 0 0 3px rgba(96, 165, 250, .35);
-      --accent: #60a5fa;
-      --danger: #fb7185;
-      --ok: #34d399;
-    }
+/* ===== BASE ===== */
+html, body {
+  height: 100%;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
 
-    *{ box-sizing: border-box; }
-    html, body{ height: 100%; }
-    body{
-      margin: 0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      background: var(--bg);
-      color: var(--text);
-      letter-spacing: .1px;
-      overflow-x: hidden;
-    }
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: 100vw;
+  overflow: hidden;
+}
 
-    a{ color: inherit; }
-    button, input, select, textarea{
-      font: inherit;
-    }
+/* ===== FOCUS & A11Y ===== */
+:focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
 
-    .shell{
-      width: min(var(--container), calc(100% - 24px));
-      margin: 0 auto;
-    }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
 
-    /* Top Bar */
-    .topbar{
-      position: sticky;
-      top: 0;
-      z-index: 40;
-      border-bottom: 1px solid var(--border);
-      background: color-mix(in srgb, var(--bg) 72%, transparent);
-      backdrop-filter: blur(10px);
-    }
-    .topbar__inner{
-      height: var(--headerH);
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: center;
-      gap: 12px;
-    }
+/* ===== MESSAGE BAR ===== */
+#message-bar {
+  flex-shrink: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--msg-h);
+  box-shadow: var(--shadow);
+  z-index: 10;
+}
 
-    .brand{
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      min-width: 0;
-    }
-    .brand__mark{
-      width: 36px; height: 36px;
-      display: grid; place-items: center;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      background: var(--surface);
-      box-shadow: var(--shadow2);
-      user-select: none;
-    }
-    .brand__text{ min-width: 0; }
-    .brand__title{
-      font-weight: 760;
-      font-size: 14px;
-      line-height: 1.1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .brand__sub{
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.1;
-      margin-top: 2px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+#message-text {
+  flex: 1;
+  min-height: 48px;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  cursor: default;
+  overflow-y: auto;
+  max-height: 90px;
+  word-break: break-word;
+  line-height: 1.4;
+}
 
-    .tabs{
-      display: inline-flex;
-      gap: 6px;
-      padding: 6px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      border-radius: 999px;
-      box-shadow: var(--shadow2);
-      justify-self: center;
-    }
-    .tab{
-      appearance: none;
-      border: 0;
-      background: transparent;
-      border-radius: 999px;
-      padding: 10px 12px;
-      cursor: pointer;
-      color: var(--muted);
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      min-height: 42px;
-      user-select: none;
-      transition: transform .08s ease, background .15s ease, color .15s ease;
-      outline: none;
-    }
-    .tab span{ font-weight: 650; font-size: 13px; }
-    .tab:active{ transform: translateY(1px); }
-    .tab[aria-selected="true"]{
-      background: color-mix(in srgb, var(--accent) 12%, transparent);
-      color: var(--text);
-    }
-    .tab:focus-visible{ box-shadow: var(--focus); }
+#message-text:empty::after {
+  content: 'Tap tiles to build your message…';
+  color: var(--text-disabled);
+  font-style: italic;
+  font-size: 0.9rem;
+}
 
-    .topbar__actions{
-      display: flex;
-      justify-self: end;
-      gap: 8px;
-      align-items: center;
-    }
-    .iconBtn{
-      width: 44px; height: 44px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      box-shadow: var(--shadow2);
-      cursor: pointer;
-      display: grid;
-      place-items: center;
-      user-select: none;
-      transition: transform .08s ease, background .15s ease, border-color .15s ease;
-      outline: none;
-    }
-    .iconBtn:active{ transform: translateY(1px); }
-    .iconBtn:hover{ border-color: color-mix(in srgb, var(--border) 65%, var(--accent)); }
-    .iconBtn:focus-visible{ box-shadow: var(--focus); }
+.msg-word {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--brand-light);
+  color: var(--brand);
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 0.93rem;
+  font-weight: 500;
+}
 
-    .statusPill{
-      display: inline-flex;
-      gap: 8px;
-      align-items: center;
-      padding: 8px 10px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      box-shadow: var(--shadow2);
-      font-size: 12px;
-      color: var(--muted);
-      user-select: none;
-    }
-    .dot{
-      width: 9px; height: 9px;
-      border-radius: 999px;
-      background: var(--ok);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 18%, transparent);
-    }
-    .dot.offline{
-      background: var(--danger);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 18%, transparent);
-    }
+.msg-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
 
-    /* Main */
-    main{
-      padding: 18px 0 calc(var(--composerH) + 18px);
-    }
+.msg-btn {
+  height: var(--touch);
+  min-width: var(--touch);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  transition: background 0.15s, transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 12px;
+  text-transform: uppercase;
+}
 
-    .panel{
-      border: 1px solid var(--border);
-      background: var(--surface);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-    .panel__head{
-      padding: 14px 14px 10px;
-      border-bottom: 1px solid var(--border);
-      background: linear-gradient(to bottom, var(--surface2), var(--surface));
-    }
-    .panel__titleRow{
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-    .hgroup{
-      display: grid;
-      gap: 3px;
-      min-width: 220px;
-    }
-    h1, h2, h3{ margin: 0; }
-    .h1{
-      font-size: 18px;
-      font-weight: 800;
-      letter-spacing: .2px;
-      line-height: 1.15;
-    }
-    .sub{
-      color: var(--muted);
-      font-size: 12.5px;
-      line-height: 1.25;
-    }
+.msg-btn:active { transform: scale(0.96); }
 
-    .toolbar{
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
+#btn-speak { background: var(--brand); color: #fff; }
+#btn-speak:hover { background: var(--brand-dark); }
+#btn-undo { background: var(--surface2); color: var(--text-secondary); border: 1px solid var(--border); }
+#btn-clear { background: var(--danger); color: #fff; }
 
-    .field{
-      position: relative;
-      min-width: 220px;
-      flex: 1;
-    }
-    .search{
-      width: 100%;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      padding: 11px 12px 11px 38px;
-      outline: none;
-      min-height: 44px;
-      color: var(--text);
-    }
-    .search:focus-visible{ box-shadow: var(--focus); border-color: color-mix(in srgb, var(--border) 55%, var(--accent)); }
-    .searchIcon{
-      position: absolute;
-      left: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--muted);
-      font-size: 15px;
-      user-select: none;
-      pointer-events: none;
-    }
-    .kbdHint{
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 11px;
-      color: var(--muted);
-      border: 1px solid var(--border);
-      border-bottom-width: 2px;
-      background: var(--surface2);
-      padding: 2px 6px;
-      border-radius: 8px;
-      user-select: none;
-      pointer-events: none;
-    }
+/* ===== TAB BAR ===== */
+#tab-bar {
+  flex-shrink: 0;
+  background: var(--surface);
+  border-bottom: 2px solid var(--border);
+  display: flex;
+  align-items: stretch;
+  height: var(--tab-h);
+  z-index: 10;
+}
 
-    .btn{
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text);
-      border-radius: 14px;
-      padding: 11px 12px;
-      cursor: pointer;
-      min-height: 44px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      user-select: none;
-      transition: transform .08s ease, border-color .15s ease, background .15s ease;
-      outline: none;
-      font-weight: 700;
-      font-size: 13px;
-      white-space: nowrap;
-    }
-    .btn:hover{ border-color: color-mix(in srgb, var(--border) 65%, var(--accent)); }
-    .btn:active{ transform: translateY(1px); }
-    .btn:focus-visible{ box-shadow: var(--focus); }
-    .btn.primary{
-      border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
-      background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-    }
-    .btn.danger{
-      border-color: color-mix(in srgb, var(--danger) 50%, var(--border));
-      background: color-mix(in srgb, var(--danger) 10%, var(--surface));
-    }
-    .btn.ghost{
-      background: transparent;
-    }
-    .btn[disabled]{
-      opacity: .55;
-      cursor: not-allowed;
-    }
+.tab-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: color 0.15s, background 0.15s;
+  padding: 6px 4px;
+  position: relative;
+  min-width: var(--touch);
+}
 
-    /* Board chips */
-    .chips{
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 10px;
-    }
-    .chip{
-      border: 1px solid var(--border);
-      background: var(--surface);
-      border-radius: 999px;
-      padding: 9px 10px;
-      min-height: 40px;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      user-select: none;
-      transition: transform .08s ease, border-color .15s ease, background .15s ease;
-      outline: none;
-      font-size: 13px;
-      color: var(--muted);
-      max-width: 100%;
-    }
-    .chip strong{ color: var(--text); font-weight: 750; }
-    .chip small{ color: var(--muted); font-weight: 650; }
-    .chip:active{ transform: translateY(1px); }
-    .chip:hover{ border-color: color-mix(in srgb, var(--border) 65%, var(--accent)); }
-    .chip[aria-selected="true"]{
-      background: color-mix(in srgb, var(--accent) 10%, var(--surface));
-      border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
-      color: var(--text);
-    }
-    .chip:focus-visible{ box-shadow: var(--focus); }
-    .chip__icon{ width: 18px; text-align: center; }
+.tab-btn .tab-icon { font-size: 1.35rem; line-height: 1; }
 
-    /* Grid */
-    .gridWrap{
-      padding: 14px;
-    }
-    .grid{
-      display: grid;
-      gap: var(--gap);
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-    @media (min-width: 620px){
-      .grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    }
-    @media (min-width: 900px){
-      .grid{ grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    }
-    @media (min-width: 1080px){
-      .grid{ grid-template-columns: repeat(5, minmax(0, 1fr)); }
-    }
+.tab-btn[aria-selected="true"] {
+  color: var(--brand);
+}
 
-    .tileWrap{
-      position: relative;
-      border-radius: var(--radius2);
-      min-height: 92px;
-    }
-    .tile{
-      width: 100%;
-      height: 100%;
-      min-height: 92px;
-      border-radius: var(--radius2);
-      border: 1px solid var(--border);
-      background:
-        radial-gradient(120px 90px at 0% 0%, color-mix(in srgb, var(--tileAccent, var(--accent)) 10%, transparent), transparent 55%),
-        linear-gradient(to bottom, var(--surface2), var(--surface));
-      box-shadow: 0 1px 0 rgba(0,0,0,.03);
-      padding: 12px 12px 12px;
-      cursor: pointer;
-      user-select: none;
-      transition: transform .08s ease, border-color .15s ease, box-shadow .15s ease;
-      outline: none;
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 6px;
-      align-content: center;
-      text-align: left;
-    }
-    .tile:hover{
-      border-color: color-mix(in srgb, var(--border) 65%, var(--tileAccent, var(--accent)));
-      box-shadow: 0 8px 18px rgba(16,24,40,.08);
-    }
-    html[data-theme="dark"] .tile:hover{
-      box-shadow: 0 10px 22px rgba(0,0,0,.35);
-    }
-    .tile:active{ transform: translateY(1px); }
-    .tile:focus-visible{ box-shadow: var(--focus); border-color: color-mix(in srgb, var(--border) 55%, var(--tileAccent, var(--accent))); }
+.tab-btn[aria-selected="true"]::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 10%;
+  right: 10%;
+  height: 3px;
+  background: var(--brand);
+  border-radius: 2px 2px 0 0;
+}
 
-    .tile__emoji{
-      font-size: var(--tileEmoji);
-      line-height: 1;
-      filter: drop-shadow(0 1px 0 rgba(0,0,0,.06));
-      user-select: none;
-    }
-    .tile__text{
-      font-size: var(--tileText);
-      font-weight: 800;
-      letter-spacing: .2px;
-      line-height: 1.1;
-    }
-    .tile__meta{
-      font-size: 12px;
-      color: var(--muted);
-      font-weight: 650;
-      line-height: 1.2;
-    }
+.tab-btn:hover { background: var(--surface2); }
 
-    .badge{
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      font-size: 11px;
-      font-weight: 800;
-      color: var(--text);
-      background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-      border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
-      padding: 3px 7px;
-      border-radius: 999px;
-      user-select: none;
-    }
+#tab-settings {
+  flex: 0 0 56px;
+  margin-left: auto;
+}
 
-    .miniActions{
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      display: flex;
-      gap: 6px;
-    }
-    .miniBtn{
-      width: 34px; height: 34px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: color-mix(in srgb, var(--surface) 75%, transparent);
-      backdrop-filter: blur(6px);
-      cursor: pointer;
-      user-select: none;
-      display: grid;
-      place-items: center;
-      box-shadow: 0 6px 16px rgba(16,24,40,.08);
-      transition: transform .08s ease, border-color .15s ease, background .15s ease;
-      outline: none;
-    }
-    .miniBtn:hover{ border-color: color-mix(in srgb, var(--border) 65%, var(--accent)); }
-    .miniBtn:active{ transform: translateY(1px); }
-    .miniBtn:focus-visible{ box-shadow: var(--focus); }
-    .miniBtn.danger:hover{ border-color: color-mix(in srgb, var(--border) 55%, var(--danger)); }
+.hidden { display: none !important; }
 
-    .empty{
-      padding: 20px 14px;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.45;
-    }
-    .hintRow{
-      margin-top: 10px;
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      color: var(--muted);
-      font-size: 12px;
-    }
-    .pill{
-      display: inline-flex;
-      gap: 8px;
-      align-items: center;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      border-radius: 999px;
-      padding: 7px 10px;
-      user-select: none;
-    }
-    .pill b{ color: var(--text); }
+/* ===== CONTENT AREA ===== */
+#content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 14px;
+  -webkit-overflow-scrolling: touch;
+}
 
-    /* Categories list */
-    .list{
-      padding: 10px 14px 14px;
-      display: grid;
-      gap: 10px;
-    }
-    .row{
-      border: 1px solid var(--border);
-      background: linear-gradient(to bottom, var(--surface2), var(--surface));
-      border-radius: var(--radius2);
-      padding: 12px;
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 10px;
-      align-items: center;
-    }
-    .row__left{
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      min-width: 0;
-    }
-    .row__icon{
-      width: 44px; height: 44px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      display: grid;
-      place-items: center;
-      background: var(--surface);
-      box-shadow: var(--shadow2);
-      flex: 0 0 auto;
-      user-select: none;
-      font-size: 20px;
-    }
-    .row__txt{
-      min-width: 0;
-      display: grid;
-      gap: 2px;
-    }
-    .row__name{
-      font-weight: 850;
-      line-height: 1.1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .row__meta{
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 650;
-      line-height: 1.2;
-    }
-    .row__actions{
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
+/* ===== TILE GRID ===== */
+.tile-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
 
-    /* Composer */
-    .composer{
-      position: fixed;
-      left: 0; right: 0; bottom: 0;
-      z-index: 35;
-      border-top: 1px solid var(--border);
-      background: color-mix(in srgb, var(--bg) 70%, transparent);
-      backdrop-filter: blur(12px);
-      padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
-    }
-    .composer__inner{
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 10px;
-      align-items: center;
-    }
-    .message{
-      border: 1px solid var(--border);
-      background: var(--surface);
-      border-radius: 16px;
-      min-height: var(--tap);
-      padding: 10px 12px;
-      resize: none;
-      outline: none;
-      box-shadow: var(--shadow2);
-      line-height: 1.25;
-    }
-    .message:focus-visible{ box-shadow: var(--focus); border-color: color-mix(in srgb, var(--border) 55%, var(--accent)); }
-    .composer__actions{
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      justify-content: flex-end;
-      flex-wrap: wrap;
-    }
-    .composer__actions .btn{ min-width: 116px; }
+/* Mobile: 3 columns */
+@media (max-width: 600px) {
+  .tile-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  #content { padding: 10px; }
+}
 
-    /* Toast */
-    .toast{
-      position: fixed;
-      right: 14px;
-      bottom: calc(var(--composerH) + 16px);
-      z-index: 60;
-      max-width: min(420px, calc(100% - 28px));
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      box-shadow: var(--shadow);
-      padding: 10px 12px;
-      display: none;
-      gap: 10px;
-      align-items: flex-start;
-    }
-    .toast.show{ display: flex; }
-    .toast__icon{
-      width: 34px; height: 34px;
-      border-radius: 12px;
-      display: grid;
-      place-items: center;
-      border: 1px solid var(--border);
-      background: var(--surface2);
-      user-select: none;
-      flex: 0 0 auto;
-    }
-    .toast__text{
-      display: grid;
-      gap: 2px;
-      min-width: 0;
-    }
-    .toast__title{
-      font-weight: 850;
-      line-height: 1.15;
-      font-size: 13px;
-    }
-    .toast__body{
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.3;
-    }
+/* Large desktop: 5 columns */
+@media (min-width: 1200px) {
+  .tile-grid { grid-template-columns: repeat(5, 1fr); gap: 12px; }
+}
 
-    /* Dialogs */
-    dialog{
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 0;
-      background: var(--surface);
-      color: var(--text);
-      box-shadow: var(--shadow);
-      width: min(760px, calc(100% - 24px));
-    }
-    dialog::backdrop{
-      background: rgba(0,0,0,.35);
-      backdrop-filter: blur(2px);
-    }
-    .dlgHead{
-      padding: 14px 14px 10px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      justify-content: space-between;
-      background: linear-gradient(to bottom, var(--surface2), var(--surface));
-    }
-    .dlgTitle{
-      display: grid;
-      gap: 3px;
-      min-width: 0;
-    }
-    .dlgTitle b{
-      font-size: 16px;
-      font-weight: 900;
-      line-height: 1.1;
-    }
-    .dlgTitle small{
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.25;
-    }
-    .dlgBody{
-      padding: 14px;
-      display: grid;
-      gap: 14px;
-    }
-    .dlgFoot{
-      padding: 12px 14px 14px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
+/* ===== TILE BUTTON ===== */
+.tile {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
+  padding: 8px 4px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  position: relative;
+  min-height: var(--touch);
+  user-select: none;
+  -webkit-user-select: none;
+  overflow: hidden;
+}
 
-    .grid2{
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
-    @media (min-width: 760px){
-      .grid2{ grid-template-columns: 1fr 1fr; }
-    }
+.tile:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--brand); }
+.tile:active { transform: scale(0.93); box-shadow: none; }
+.tile:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
 
-    .card{
-      border: 1px solid var(--border);
-      background: linear-gradient(to bottom, var(--surface2), var(--surface));
-      border-radius: 16px;
-      padding: 12px;
-      display: grid;
-      gap: 10px;
-    }
-    .card h3{
-      font-size: 13px;
-      font-weight: 900;
-      letter-spacing: .2px;
-    }
+.tile-emoji { font-size: clamp(1.6rem, 5vw, 2.4rem); line-height: 1; }
+.tile-label {
+  font-size: clamp(0.62rem, 2.2vw, 0.82rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+  word-break: break-word;
+  max-width: 100%;
+}
 
-    .control{
-      display: grid;
-      gap: 6px;
-    }
-    .labelRow{
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      align-items: baseline;
-    }
-    .labelRow label{
-      font-size: 12.5px;
-      font-weight: 800;
-      color: var(--text);
-    }
-    .labelRow .val{
-      font-size: 12px;
-      color: var(--muted);
-      font-weight: 700;
-    }
-    .select, .text, .num{
-      width: 100%;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      padding: 11px 12px;
-      min-height: 44px;
-      outline: none;
-    }
-    .select:focus-visible, .text:focus-visible, .num:focus-visible{ box-shadow: var(--focus); border-color: color-mix(in srgb, var(--border) 55%, var(--accent)); }
-    .range{ width: 100%; }
-    .switchRow{
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-    }
-    .switchRow .left{
-      display: grid;
-      gap: 2px;
-    }
-    .switchRow .left b{
-      font-size: 12.5px;
-      font-weight: 900;
-    }
-    .switchRow .left small{
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.25;
-    }
-    .switch{
-      width: 50px;
-      height: 30px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: var(--surface2);
-      position: relative;
-      cursor: pointer;
-      user-select: none;
-      flex: 0 0 auto;
-      outline: none;
-    }
-    .switch::after{
-      content: "";
-      position: absolute;
-      width: 24px; height: 24px;
-      top: 2px; left: 2px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      transition: transform .15s ease, background .15s ease;
-      box-shadow: 0 6px 14px rgba(16,24,40,.10);
-    }
-    .switch[aria-checked="true"]{
-      background: color-mix(in srgb, var(--accent) 18%, var(--surface2));
-      border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
-    }
-    .switch[aria-checked="true"]::after{
-      transform: translateX(20px);
-      background: var(--surface);
-    }
-    .switch:focus-visible{ box-shadow: var(--focus); }
+/* Tile color variants */
+.tile[data-color="blue"] { border-color: #1976D2; background: linear-gradient(135deg, #E3F2FD 0%, #fff 100%); }
+.tile[data-color="green"] { border-color: #388E3C; background: linear-gradient(135deg, #E8F5E9 0%, #fff 100%); }
+.tile[data-color="orange"] { border-color: #F57C00; background: linear-gradient(135deg, #FFF3E0 0%, #fff 100%); }
+.tile[data-color="purple"] { border-color: #7B1FA2; background: linear-gradient(135deg, #F3E5F5 0%, #fff 100%); }
+.tile[data-color="red"] { border-color: #C62828; background: linear-gradient(135deg, #FFEBEE 0%, #fff 100%); }
+.tile[data-color="teal"] { border-color: #00796B; background: linear-gradient(135deg, #E0F2F1 0%, #fff 100%); }
+.tile[data-color="pink"] { border-color: #AD1457; background: linear-gradient(135deg, #FCE4EC 0%, #fff 100%); }
+.tile[data-color="yellow"] { border-color: #F9A825; background: linear-gradient(135deg, #FFFDE7 0%, #fff 100%); }
 
-    .radioRow{
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .radioBtn{
-      border: 1px solid var(--border);
-      background: var(--surface);
-      border-radius: 999px;
-      padding: 10px 12px;
-      min-height: 42px;
-      cursor: pointer;
-      user-select: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      font-weight: 800;
-      color: var(--muted);
-      outline: none;
-      transition: transform .08s ease, border-color .15s ease, background .15s ease, color .15s ease;
-    }
-    .radioBtn:active{ transform: translateY(1px); }
-    .radioBtn[aria-pressed="true"]{
-      background: color-mix(in srgb, var(--accent) 10%, var(--surface));
-      border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
-      color: var(--text);
-    }
-    .radioBtn:focus-visible{ box-shadow: var(--focus); }
+[data-theme="dark"] .tile[data-color="blue"] { background: linear-gradient(135deg, #1C2E42 0%, var(--surface) 100%); }
+[data-theme="dark"] .tile[data-color="green"] { background: linear-gradient(135deg, #1B2E1C 0%, var(--surface) 100%); }
+[data-theme="dark"] .tile[data-color="orange"] { background: linear-gradient(135deg, #2E1E0A 0%, var(--surface) 100%); }
+[data-theme="dark"] .tile[data-color="purple"] { background: linear-gradient(135deg, #27133A 0%, var(--surface) 100%); }
+[data-theme="dark"] .tile[data-color="red"] { background: linear-gradient(135deg, #2E0E0E 0%, var(--surface) 100%); }
+[data-theme="dark"] .tile[data-color="teal"] { background: linear-gradient(135deg, #0A2422 0%, var(--surface) 100%); }
+[data-theme="dark"] .tile[data-color="pink"] { background: linear-gradient(135deg, #2E0A1D 0%, var(--surface) 100%); }
+[data-theme="dark"] .tile[data-color="yellow"] { background: linear-gradient(135deg, #2E2200 0%, var(--surface) 100%); }
 
-    /* Lock keypad */
-    .keypad{
-      display: grid;
-      gap: 10px;
-    }
-    .pinDots{
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      padding: 10px 0 2px;
-    }
-    .dotPin{
-      width: 14px; height: 14px;
-      border-radius: 999px;
-      border: 2px solid var(--border);
-      background: transparent;
-    }
-    .dotPin.filled{ background: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }
-    .keys{
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-    }
-    .key{
-      min-height: 56px;
-      border-radius: 16px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      cursor: pointer;
-      font-weight: 900;
-      font-size: 18px;
-      user-select: none;
-      transition: transform .08s ease, border-color .15s ease;
-      outline: none;
-    }
-    .key:hover{ border-color: color-mix(in srgb, var(--border) 65%, var(--accent)); }
-    .key:active{ transform: translateY(1px); }
-    .key:focus-visible{ box-shadow: var(--focus); }
-    .key.subKey{ font-size: 14px; font-weight: 850; color: var(--muted); }
+/* Edit overlay */
+.tile-edit-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(25,118,210,0.9);
+  color: #fff;
+  border: none;
+  font-size: 0.65rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 2;
+}
 
-    /* Small screens */
-    @media (max-width: 540px){
-      .brand__sub{ display:none; }
-      .composer__inner{ grid-template-columns: 1fr; }
-      .composer__actions .btn{ min-width: unset; flex: 1; }
-      .statusPill{ display:none; }
-      .topbar__inner{ grid-template-columns: 1fr auto; }
-      .tabs{ justify-self: end; }
-      .brand{ gap: 8px; }
-      .brand__title{ font-size: 13px; }
-    }
+.tile:hover .tile-edit-btn,
+.tile:focus-within .tile-edit-btn { opacity: 1; }
 
-    /* Reduced motion */
-    @media (prefers-reduced-motion: reduce){
-      *{ transition: none !important; scroll-behavior: auto !important; }
-    }
-  </style>
+/* Add tile placeholder */
+.tile-add {
+  border-style: dashed;
+  border-color: var(--brand);
+  background: transparent;
+  color: var(--brand);
+  opacity: 0.65;
+}
+
+.tile-add:hover { opacity: 1; background: var(--brand-light); }
+
+/* ===== CATEGORY BOARD CHIPS ===== */
+#board-nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.board-chip {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 18px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.board-chip[aria-selected="true"] {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+
+.board-chip:hover:not([aria-selected="true"]) {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+/* ===== TRENDING TAB ===== */
+.trending-section { margin-bottom: 24px; }
+
+.section-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.trending-filter {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.filter-btn {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 16px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.filter-btn.active {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+
+.trending-list { display: flex; flex-direction: column; gap: 8px; }
+
+.trending-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.trending-rank {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.trending-info { flex: 1; }
+.trending-label { font-weight: 700; font-size: 0.9rem; }
+.trending-meta { font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px; }
+
+.trending-bar-wrap { width: 80px; }
+.trending-bar {
+  height: 6px;
+  background: var(--surface2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.trending-bar-fill {
+  height: 100%;
+  background: var(--brand);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.trending-count {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--brand);
+  min-width: 32px;
+  text-align: right;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-secondary);
+}
+
+.empty-state .empty-icon { font-size: 3rem; margin-bottom: 12px; }
+.empty-state p { font-size: 0.9rem; }
+
+/* ===== SETTINGS PANEL ===== */
+#settings-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(0,0,0,0.5);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+}
+
+#settings-panel.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+#settings-sheet {
+  width: 100%;
+  max-width: 560px;
+  max-height: 90dvh;
+  margin: 0 auto;
+  background: var(--surface);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  overflow-y: auto;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: var(--shadow-lg);
+}
+
+#settings-panel.open #settings-sheet { transform: translateY(0); }
+
+.sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 12px auto 0;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sheet-title { font-size: 1.1rem; font-weight: 800; }
+
+.sheet-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface2);
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-body { padding: 16px 20px 40px; }
+
+.settings-section {
+  margin-bottom: 24px;
+}
+
+.settings-section-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--brand);
+  margin-bottom: 12px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+
+.settings-row:last-child { border-bottom: none; }
+
+.settings-row-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.settings-row-sub {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* Toggle switch */
+.toggle {
+  position: relative;
+  width: 48px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--border);
+  border-radius: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.toggle input:checked + .toggle-slider { background: var(--brand); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(22px); }
+.toggle input:focus-visible + .toggle-slider { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+/* Select / Range */
+.settings-select {
+  height: 36px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  background: var(--surface2);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.settings-range {
+  width: 130px;
+  accent-color: var(--brand);
+}
+
+.btn-action {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  background: var(--surface2);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-action:hover { border-color: var(--brand); color: var(--brand); }
+.btn-action.danger { border-color: var(--danger); color: var(--danger); }
+.btn-action.danger:hover { background: var(--danger); color: #fff; }
+.btn-action.primary { background: var(--brand); color: #fff; border-color: var(--brand); }
+.btn-action.primary:hover { background: var(--brand-dark); }
+
+/* ===== MODALS ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0,0,0,0.55);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+
+.modal {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-lg);
+  transform: scale(0.94);
+  transition: transform 0.22s cubic-bezier(0.4,0,0.2,1);
+  overflow: hidden;
+}
+
+.modal-overlay.open .modal { transform: scale(1); }
+
+.modal-header {
+  padding: 20px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-title { font-size: 1.05rem; font-weight: 800; }
+.modal-body { padding: 18px 20px; }
+.modal-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* Form inputs */
+.form-group { margin-bottom: 14px; }
+.form-label { display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 5px; color: var(--text-secondary); }
+
+.form-input {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  background: var(--surface2);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  transition: border-color 0.15s;
+}
+
+.form-input:focus { outline: none; border-color: var(--brand); }
+
+.emoji-picker-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.emoji-opt {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border);
+  background: var(--surface2);
+  font-size: 1.3rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s;
+}
+
+.emoji-opt.selected { border-color: var(--brand); background: var(--brand-light); }
+
+.color-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.color-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
+}
+
+.color-swatch.selected { border-color: var(--text-primary); transform: scale(1.15); }
+
+/* PIN pad */
+.pin-display {
+  text-align: center;
+  font-size: 2.2rem;
+  letter-spacing: 0.4em;
+  padding: 12px 0 20px;
+  min-height: 60px;
+  color: var(--brand);
+  font-weight: 800;
+}
+
+.pin-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  max-width: 280px;
+  margin: 0 auto;
+}
+
+.pin-key {
+  height: 60px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border);
+  background: var(--surface2);
+  color: var(--text-primary);
+  font-size: 1.3rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pin-key:active { transform: scale(0.92); background: var(--brand-light); }
+.pin-key.del { color: var(--danger); }
+.pin-key.ok { background: var(--brand); color: #fff; border-color: var(--brand); }
+
+.pin-error { color: var(--danger); font-size: 0.85rem; text-align: center; margin-top: 8px; font-weight: 600; }
+
+/* ===== LOCK INDICATOR ===== */
+#lock-indicator {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+
+#lock-indicator:hover { border-color: var(--brand); color: var(--brand); }
+#lock-indicator.unlocked { border-color: var(--success); color: var(--success); }
+
+/* ===== CATEGORIES VIEW ===== */
+.category-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: var(--shadow);
+}
+
+.category-card:hover { border-color: var(--brand); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.category-card-icon { font-size: 2rem; }
+.category-card-name { font-weight: 800; font-size: 0.9rem; }
+.category-card-count { font-size: 0.75rem; color: var(--text-secondary); }
+
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+@media (min-width: 600px) {
+  .categories-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (min-width: 1200px) {
+  .categories-grid { grid-template-columns: repeat(5, 1fr); }
+}
+
+/* ===== PRIVACY NOTICE ===== */
+.privacy-box {
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  border: 1px solid var(--border);
+}
+
+.privacy-box h4 { color: var(--text-primary); font-size: 0.85rem; margin-bottom: 8px; }
+.privacy-box ul { padding-left: 16px; }
+.privacy-box li { margin-bottom: 4px; }
+
+/* ===== TOAST ===== */
+#toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--text-primary);
+  color: var(--bg);
+  padding: 10px 20px;
+  border-radius: 24px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-md);
+  z-index: 999;
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.3s;
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 90vw;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+#toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+/* ===== SPEAKING ANIMATION ===== */
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(25,118,210,0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(25,118,210,0); }
+  100% { box-shadow: 0 0 0 0 rgba(25,118,210,0); }
+}
+
+.tile.speaking { animation: pulse-ring 0.6s ease-out; border-color: var(--brand); }
+
+/* ===== BOARD MANAGEMENT HEADER ===== */
+#board-mgmt-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+#board-mgmt-bar select {
+  flex: 1;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  padding: 0 10px;
+}
+
+/* Scrollable wrapper for category boards */
+#board-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -14px;
+  padding: 0 14px;
+  scrollbar-width: none;
+}
+#board-scroll::-webkit-scrollbar { display: none; }
+#board-scroll #board-nav { flex-wrap: nowrap; }
+
+/* Landscape tweaks */
+@media (orientation: landscape) and (max-height: 500px) {
+  :root { --msg-h: 60px; --tab-h: 50px; }
+  .tile-emoji { font-size: 1.3rem; }
+  .tile-label { font-size: 0.58rem; }
+  .tab-btn { font-size: 0.6rem; }
+  .tab-btn .tab-icon { font-size: 1.1rem; }
+}
+
+/* ===== KEYBOARD SHORTCUTS ===== */
+.shortcuts-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.shortcuts-table th { text-align: left; padding: 6px 8px; color: var(--text-secondary); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.shortcuts-table td { padding: 7px 8px; border-top: 1px solid var(--border); }
+.shortcuts-table td:first-child { font-family: monospace; background: var(--surface2); border-radius: 4px; color: var(--brand); font-weight: 700; }
+</style>
 </head>
-
 <body>
-  <header class="topbar">
-    <div class="shell topbar__inner">
-      <div class="brand" aria-label="Talkboard">
-        <div class="brand__mark" aria-hidden="true">🗣️</div>
-        <div class="brand__text">
-          <div class="brand__title">Talkboard</div>
-          <div class="brand__sub">Simple AAC grid • TTS/Audio • PWA-ready</div>
-        </div>
-      </div>
 
-      <nav class="tabs" aria-label="Primary navigation">
-        <button class="tab" id="tabHome" data-tab="home" aria-selected="true" title="Home (Alt+1)">
-          🏠 <span>Home</span>
-        </button>
-        <button class="tab" id="tabTrending" data-tab="trending" aria-selected="false" title="Trending (Alt+2)">
-          📈 <span>Trending</span>
-        </button>
-        <button class="tab" id="tabCategories" data-tab="categories" aria-selected="false" title="Categories (Alt+3)">
-          🗂️ <span>Categories</span>
-        </button>
-      </nav>
-
-      <div class="topbar__actions">
-        <div class="statusPill" id="netPill" title="Network / Offline cache status">
-          <span class="dot" id="netDot" aria-hidden="true"></span>
-          <span id="netText">Online</span>
-        </div>
-        <button class="iconBtn" id="lockBtn" aria-label="Lock / Unlock board" title="Lock/Unlock (Ctrl+L)">🔒</button>
-        <button class="iconBtn" id="settingsBtn" aria-label="Settings" title="Settings (S)">⚙️</button>
-      </div>
-    </div>
-  </header>
-
-  <main class="shell">
-    <section id="view" aria-live="polite"></section>
-  </main>
-
-  <section class="composer" aria-label="Message composer">
-    <div class="shell composer__inner">
-      <textarea id="messageBox" class="message" rows="2" placeholder="Your message builds here. Tap tiles to add words…"></textarea>
-      <div class="composer__actions">
-        <button class="btn primary" id="speakMsgBtn" title="Speak message (Ctrl+Shift+S)">🔊 Speak</button>
-        <button class="btn" id="backspaceBtn" title="Remove last word (Backspace)">⌫ Undo</button>
-        <button class="btn danger" id="clearMsgBtn" title="Clear message (Esc when focused)">🧹 Clear</button>
-      </div>
-    </div>
-  </section>
-
-  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true">
-    <div class="toast__icon" id="toastIcon" aria-hidden="true">ℹ️</div>
-    <div class="toast__text">
-      <div class="toast__title" id="toastTitle">Notice</div>
-      <div class="toast__body" id="toastBody"></div>
+<!-- ===== MESSAGE BAR ===== -->
+<div id="message-bar" role="region" aria-label="Message composer">
+  <div id="message-text" aria-live="polite" aria-label="Composed message" role="status"></div>
+  <div class="msg-actions">
+    <button id="btn-speak" class="msg-btn" aria-label="Speak message" title="Speak (Enter)">
+      <span aria-hidden="true">🔊</span> Speak
+    </button>
+    <div style="display:flex;gap:5px;">
+      <button id="btn-undo" class="msg-btn" aria-label="Undo last word" title="Undo (Backspace)">
+        <span aria-hidden="true">↩</span>
+      </button>
+      <button id="btn-clear" class="msg-btn" aria-label="Clear message" title="Clear (Escape)">
+        <span aria-hidden="true">✕</span>
+      </button>
     </div>
   </div>
+</div>
 
-  <!-- Settings -->
-  <dialog id="settingsDlg" aria-label="Settings">
-    <div class="dlgHead">
-      <div class="dlgTitle">
-        <b>⚙️ Settings</b>
-        <small>Output mode, theme, sound, haptics, offline/PWA, restore defaults</small>
-      </div>
-      <button class="iconBtn" data-action="closeDialog" data-target="settingsDlg" aria-label="Close">✕</button>
+<!-- ===== TAB BAR ===== -->
+<nav id="tab-bar" role="tablist" aria-label="Main navigation">
+  <button class="tab-btn" id="tab-home" role="tab" aria-selected="true" aria-controls="panel-home" data-tab="home">
+    <span class="tab-icon" aria-hidden="true">🏠</span>
+    <span>Home</span>
+  </button>
+  <button class="tab-btn hidden" id="tab-trending" role="tab" aria-selected="false" aria-controls="panel-trending" data-tab="trending">
+    <span class="tab-icon" aria-hidden="true">📈</span>
+    <span>Trending</span>
+  </button>
+  <button class="tab-btn hidden" id="tab-categories" role="tab" aria-selected="false" aria-controls="panel-categories" data-tab="categories">
+    <span class="tab-icon" aria-hidden="true">🗂️</span>
+    <span>Categories</span>
+  </button>
+  <button class="tab-btn hidden" id="tab-settings" role="button" aria-label="Open Settings" aria-haspopup="dialog" title="Settings (S)">
+    <span class="tab-icon" aria-hidden="true">⚙️</span>
+    <span>Settings</span>
+  </button>
+</nav>
+
+<!-- ===== CONTENT ===== -->
+<main id="content" role="main" aria-label="Communication board">
+
+  <!-- HOME PANEL -->
+  <section id="panel-home" role="tabpanel" aria-labelledby="tab-home">
+    <div id="board-scroll">
+      <div id="board-nav" role="listbox" aria-label="Boards"></div>
     </div>
+    <div id="board-mgmt-bar" class="hidden">
+      <button class="btn-action primary" id="btn-add-board" aria-label="Add new board">➕ Board</button>
+      <button class="btn-action primary" id="btn-add-tile" aria-label="Add new tile">➕ Tile</button>
+    </div>
+    <div id="tile-container" class="tile-grid" aria-label="Communication tiles"></div>
+  </section>
 
-    <div class="dlgBody">
-      <div class="grid2">
-        <div class="card">
-          <h3>Output mode</h3>
-          <div class="radioRow">
-            <button class="radioBtn" id="outTTS" type="button" aria-pressed="true" data-setting="outputMode" data-value="tts">🗣️ TTS</button>
-            <button class="radioBtn" id="outAudio" type="button" aria-pressed="false" data-setting="outputMode" data-value="audio">🎵 Audio</button>
-          </div>
-          <div class="switchRow">
-            <div class="left">
-              <b>Audio fallback to TTS</b>
-              <small>If a tile has no audio clip, speak with TTS instead (recommended).</small>
-            </div>
-            <div class="switch" role="switch" tabindex="0" id="fallbackSwitch" aria-checked="true"></div>
-          </div>
-        </div>
+  <!-- TRENDING PANEL -->
+  <section id="panel-trending" role="tabpanel" aria-labelledby="tab-trending" class="hidden">
+    <div class="trending-filter" role="group" aria-label="Time period filter">
+      <button class="filter-btn active" data-period="day">Today</button>
+      <button class="filter-btn" data-period="week">Week</button>
+      <button class="filter-btn" data-period="month">Month</button>
+      <button class="filter-btn" data-period="6months">6 Months</button>
+      <button class="filter-btn" data-period="all">All Time</button>
+    </div>
+    <div id="trending-reset-wrap" class="hidden" style="margin-bottom:12px;">
+      <button class="btn-action danger" id="btn-reset-trending">🗑️ Reset Trending Data</button>
+    </div>
+    <div id="trending-content"></div>
+  </section>
 
-        <div class="card">
-          <h3>Theme</h3>
-          <div class="radioRow">
-            <button class="radioBtn" type="button" id="themeLight" aria-pressed="true" data-setting="theme" data-value="light">🌤️ Light</button>
-            <button class="radioBtn" type="button" id="themeDark" aria-pressed="false" data-setting="theme" data-value="dark">🌙 Dark</button>
-          </div>
-          <div class="switchRow">
-            <div class="left">
-              <b>High touch targets</b>
-              <small>Optimized spacing for tablets/phones (always on).</small>
-            </div>
-            <div class="pill" aria-hidden="true"><b>✓</b> Enabled</div>
-          </div>
-        </div>
+  <!-- CATEGORIES PANEL -->
+  <section id="panel-categories" role="tabpanel" aria-labelledby="tab-categories" class="hidden">
+    <p class="section-title">All Categories</p>
+    <div id="categories-grid" class="categories-grid"></div>
+  </section>
 
-        <div class="card">
-          <h3>Sound / Voice</h3>
+</main>
 
-          <div class="control">
-            <div class="labelRow">
-              <label for="volRange">Volume</label>
-              <div class="val" id="volVal">100%</div>
-            </div>
-            <input class="range" id="volRange" type="range" min="0" max="1" step="0.01" value="1" />
-          </div>
+<!-- ===== LOCK INDICATOR ===== -->
+<button id="lock-indicator" aria-label="Tap to unlock. Currently locked." title="Unlock (U)">
+  🔒 Locked – Tap to Unlock
+</button>
 
-          <div class="control">
-            <div class="labelRow">
-              <label for="rateRange">Speed</label>
-              <div class="val" id="rateVal">1.00×</div>
-            </div>
-            <input class="range" id="rateRange" type="range" min="0.5" max="2" step="0.01" value="1" />
-          </div>
+<!-- ===== TOAST ===== -->
+<div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
-          <div class="control">
-            <div class="labelRow">
-              <label for="voiceSelect">TTS Voice</label>
-              <div class="val" id="voiceCount">Loading…</div>
-            </div>
-            <select class="select" id="voiceSelect"></select>
-          </div>
+<!-- ===== SETTINGS PANEL ===== -->
+<div id="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title" aria-hidden="true">
+  <div id="settings-sheet">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <div class="sheet-header">
+      <h2 class="sheet-title" id="settings-title">⚙️ Settings</h2>
+      <button class="sheet-close" id="settings-close" aria-label="Close settings">✕</button>
+    </div>
+    <div class="settings-body">
 
-          <div class="control">
-            <div class="labelRow">
-              <label for="fallbackAudio">Upload a voice sample (fallback audio)</label>
-              <div class="val">Audio mode</div>
-            </div>
-            <input class="text" id="fallbackAudio" type="file" accept="audio/*" />
-            <div class="sub">Used in <b>Audio</b> mode when a tile has no clip (optional). Stored locally on this device.</div>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3>Feel</h3>
-          <div class="switchRow">
-            <div class="left">
-              <b>Haptic vibrate</b>
-              <small>Vibrate on tile press (if supported).</small>
-            </div>
-            <div class="switch" role="switch" tabindex="0" id="hapticSwitch" aria-checked="true"></div>
-          </div>
-
-          <div class="control">
-            <div class="labelRow">
-              <label for="hapticStrength">Vibration strength</label>
-              <div class="val" id="hapVal">Medium</div>
-            </div>
-            <select class="select" id="hapticStrength">
-              <option value="soft">Soft</option>
-              <option value="medium" selected>Medium</option>
-              <option value="strong">Strong</option>
-            </select>
-          </div>
+      <!-- Output Mode -->
+      <div class="settings-section">
+        <div class="settings-section-title">Output Mode</div>
+        <div class="settings-row">
+          <div><div class="settings-row-label">Mode</div><div class="settings-row-sub">TTS = Text to Speech | Audio = uploaded clips</div></div>
+          <select class="settings-select" id="setting-output-mode" aria-label="Output mode">
+            <option value="tts">🔊 TTS</option>
+            <option value="audio">🎵 Audio</option>
+          </select>
         </div>
       </div>
 
-      <div class="grid2">
-        <div class="card">
-          <h3>Offline / PWA</h3>
-          <div class="switchRow">
-            <div class="left">
-              <b>Offline cache</b>
-              <small id="swStatus">Checking Service Worker…</small>
-            </div>
-            <div class="pill" id="swPill" aria-hidden="true">…</div>
-          </div>
-
-          <div class="radioRow">
-            <button class="btn" type="button" id="installBtn" disabled>📲 Install app</button>
-            <button class="btn" type="button" id="downloadSwBtn" title="Download sw.js helper">⬇️ Download sw.js</button>
-          </div>
-
-          <div class="sub">
-            Tip: For true offline support, open this file via a local server (localhost) or HTTPS. Some browsers block service workers for <b>file://</b>.
-          </div>
-        </div>
-
-        <div class="card">
-          <h3>Data</h3>
-          <div class="radioRow">
-            <button class="btn" type="button" id="exportBtn">⬇️ Export</button>
-            <label class="btn" for="importFile" style="cursor:pointer;">⬆️ Import</label>
-            <input id="importFile" type="file" accept="application/json" hidden />
-          </div>
-          <div class="radioRow">
-            <button class="btn danger" type="button" id="resetBtn">♻️ Restore defaults</button>
-            <button class="btn" type="button" id="clearTrendingBtn">📉 Reset trending</button>
-          </div>
-          <div class="sub">
-            Restore defaults resets the Home board, Trending, and settings (including message composer).
-          </div>
+      <!-- Theme -->
+      <div class="settings-section">
+        <div class="settings-section-title">Appearance</div>
+        <div class="settings-row">
+          <div><div class="settings-row-label">Theme</div></div>
+          <select class="settings-select" id="setting-theme" aria-label="Color theme">
+            <option value="light">☀️ Light</option>
+            <option value="dark">🌙 Dark</option>
+          </select>
         </div>
       </div>
 
-      <div class="card">
-        <h3>Keyboard shortcuts</h3>
-        <div class="sub" style="line-height:1.6">
-          <b>Alt+1</b> Home • <b>Alt+2</b> Trending • <b>Alt+3</b> Categories • <b>Ctrl+L</b> Lock/Unlock •
-          <b>/</b> Search • <b>S</b> Settings • <b>Enter/Space</b> Activate focused tile • <b>Ctrl+Shift+S</b> Speak message •
-          <b>Backspace</b> Undo word • <b>Esc</b> Stop speech / close dialogs
+      <!-- Voice & Sound -->
+      <div class="settings-section">
+        <div class="settings-section-title">Voice & Sound</div>
+        <div class="settings-row">
+          <div><div class="settings-row-label">Volume</div></div>
+          <input type="range" class="settings-range" id="setting-volume" min="0" max="1" step="0.05" value="1" aria-label="Volume">
+        </div>
+        <div class="settings-row">
+          <div><div class="settings-row-label">TTS Speed</div></div>
+          <input type="range" class="settings-range" id="setting-rate" min="0.5" max="2" step="0.1" value="1" aria-label="Speech rate">
+        </div>
+        <div class="settings-row">
+          <div><div class="settings-row-label">TTS Voice</div></div>
+          <select class="settings-select" id="setting-voice" aria-label="TTS Voice"></select>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">Upload Voice Sample</div>
+            <div class="settings-row-sub">MP3/WAV. Stored locally on device only.</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;">
+            <label class="btn-action" style="cursor:pointer;user-select:none;" role="button" tabindex="0">
+              📂 Upload
+              <input type="file" accept="audio/*" id="upload-voice" style="display:none;" aria-label="Upload voice sample">
+            </label>
+            <button class="btn-action danger" id="btn-delete-voice" style="display:none;">🗑️ Delete</button>
+          </div>
+        </div>
+        <div id="voice-preview-row" class="settings-row hidden">
+          <div><div class="settings-row-label">Voice Sample</div></div>
+          <audio id="voice-preview" controls style="height:36px;max-width:180px;"></audio>
         </div>
       </div>
-    </div>
 
-    <div class="dlgFoot">
-      <button class="btn" type="button" data-action="closeDialog" data-target="settingsDlg">Done</button>
-    </div>
-  </dialog>
-
-  <!-- Lock dialog -->
-  <dialog id="lockDlg" aria-label="Unlock board">
-    <div class="dlgHead">
-      <div class="dlgTitle">
-        <b id="lockTitle">🔒 Board locked</b>
-        <small id="lockSub">Enter the 6-digit code to unlock editing.</small>
-      </div>
-      <button class="iconBtn" data-action="closeDialog" data-target="lockDlg" aria-label="Close">✕</button>
-    </div>
-
-    <div class="dlgBody">
-      <div class="keypad">
-        <div class="pinDots" id="pinDots" aria-label="PIN entry">
-          <div class="dotPin" aria-hidden="true"></div>
-          <div class="dotPin" aria-hidden="true"></div>
-          <div class="dotPin" aria-hidden="true"></div>
-          <div class="dotPin" aria-hidden="true"></div>
-          <div class="dotPin" aria-hidden="true"></div>
-          <div class="dotPin" aria-hidden="true"></div>
-        </div>
-
-        <div class="keys" id="keys">
-          <button class="key" data-key="1">1</button>
-          <button class="key" data-key="2">2</button>
-          <button class="key" data-key="3">3</button>
-          <button class="key" data-key="4">4</button>
-          <button class="key" data-key="5">5</button>
-          <button class="key" data-key="6">6</button>
-          <button class="key" data-key="7">7</button>
-          <button class="key" data-key="8">8</button>
-          <button class="key" data-key="9">9</button>
-          <button class="key subKey" data-key="clear">Clear</button>
-          <button class="key" data-key="0">0</button>
-          <button class="key subKey" data-key="back">Back</button>
-        </div>
-
-        <div class="sub" id="lockHint" style="text-align:center;">
-          Locked mode prevents editing, but you can still tap tiles to communicate with TTS/Audio.
+      <!-- Feel -->
+      <div class="settings-section">
+        <div class="settings-section-title">Feel</div>
+        <div class="settings-row">
+          <div><div class="settings-row-label">Haptic Vibration</div><div class="settings-row-sub">On tile tap (if supported)</div></div>
+          <label class="toggle" aria-label="Haptic vibration">
+            <input type="checkbox" id="setting-haptic" checked>
+            <span class="toggle-slider"></span>
+          </label>
         </div>
       </div>
-    </div>
 
-    <div class="dlgFoot">
-      <button class="btn" type="button" data-action="closeDialog" data-target="lockDlg">Cancel</button>
-    </div>
-  </dialog>
-
-  <!-- Board editor dialog -->
-  <dialog id="boardDlg" aria-label="Board editor">
-    <div class="dlgHead">
-      <div class="dlgTitle">
-        <b id="boardDlgTitle">🗂️ Board</b>
-        <small id="boardDlgSub">Rename and manage your custom board.</small>
-      </div>
-      <button class="iconBtn" data-action="closeDialog" data-target="boardDlg" aria-label="Close">✕</button>
-    </div>
-
-    <div class="dlgBody">
-      <div class="grid2">
-        <div class="card">
-          <h3>Board details</h3>
-          <div class="control">
-            <div class="labelRow">
-              <label for="boardName">Name</label>
-              <div class="val">Visible</div>
-            </div>
-            <input class="text" id="boardName" type="text" maxlength="40" />
-          </div>
-          <div class="control">
-            <div class="labelRow">
-              <label for="boardIcon">Icon (emoji)</label>
-              <div class="val">Optional</div>
-            </div>
-            <input class="text" id="boardIcon" type="text" maxlength="4" placeholder="e.g., 🙂" />
-          </div>
+      <!-- Data -->
+      <div class="settings-section">
+        <div class="settings-section-title">Data &amp; Recovery</div>
+        <div class="settings-row">
+          <div><div class="settings-row-label">Export Data</div><div class="settings-row-sub">Boards, tiles, settings (JSON). Audio files excluded.</div></div>
+          <button class="btn-action" id="btn-export">⬆️ Export</button>
         </div>
-
-        <div class="card">
-          <h3>Board actions</h3>
-          <div class="radioRow">
-            <button class="btn" type="button" id="boardSaveBtn">💾 Save</button>
-            <button class="btn danger" type="button" id="boardDeleteBtn">🗑️ Delete board</button>
-          </div>
-          <div class="sub">
-            System boards can’t be edited or deleted. Custom boards can be managed when unlocked.
-          </div>
+        <div class="settings-row">
+          <div><div class="settings-row-label">Import Data</div><div class="settings-row-sub">Restore from JSON export.</div></div>
+          <label class="btn-action" style="cursor:pointer;" role="button" tabindex="0">
+            ⬇️ Import
+            <input type="file" accept="application/json,.json" id="import-file" style="display:none;" aria-label="Import data file">
+          </label>
+        </div>
+        <div class="settings-row">
+          <div><div class="settings-row-label">Restore Defaults</div><div class="settings-row-sub">Clears all custom boards, tiles, trends, and settings.</div></div>
+          <button class="btn-action danger" id="btn-restore">🔄 Restore</button>
         </div>
       </div>
-    </div>
 
-    <div class="dlgFoot">
-      <button class="btn" type="button" data-action="closeDialog" data-target="boardDlg">Done</button>
-    </div>
-  </dialog>
-
-  <!-- Tile editor dialog -->
-  <dialog id="tileDlg" aria-label="Tile editor">
-    <div class="dlgHead">
-      <div class="dlgTitle">
-        <b id="tileDlgTitle">🧩 Tile</b>
-        <small id="tileDlgSub">Edit label, emoji, accent, and optional audio clip.</small>
+      <!-- Keyboard Shortcuts -->
+      <div class="settings-section">
+        <div class="settings-section-title">Keyboard Shortcuts</div>
+        <table class="shortcuts-table" aria-label="Keyboard shortcuts reference">
+          <thead><tr><th>Key</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td>Enter</td><td>Speak message</td></tr>
+            <tr><td>Backspace</td><td>Undo last word</td></tr>
+            <tr><td>Escape</td><td>Clear message / Close dialog</td></tr>
+            <tr><td>U</td><td>Unlock (shows PIN prompt)</td></tr>
+            <tr><td>S</td><td>Open Settings (unlocked only)</td></tr>
+            <tr><td>1–3</td><td>Switch tabs: Home/Trending/Categories (unlocked)</td></tr>
+            <tr><td>Tab</td><td>Navigate tiles</td></tr>
+            <tr><td>Space</td><td>Activate focused tile</td></tr>
+          </tbody>
+        </table>
       </div>
-      <button class="iconBtn" data-action="closeDialog" data-target="tileDlg" aria-label="Close">✕</button>
-    </div>
 
-    <div class="dlgBody">
-      <div class="grid2">
-        <div class="card">
-          <h3>Tile details</h3>
-
-          <div class="control">
-            <div class="labelRow">
-              <label for="tileText">Text</label>
-              <div class="val">Spoken</div>
-            </div>
-            <input class="text" id="tileText" type="text" maxlength="60" placeholder="e.g., I need help" />
-          </div>
-
-          <div class="control">
-            <div class="labelRow">
-              <label for="tileEmoji">Emoji</label>
-              <div class="val">Shown</div>
-            </div>
-            <input class="text" id="tileEmoji" type="text" maxlength="4" placeholder="e.g., 🆘" />
-          </div>
-
-          <div class="control">
-            <div class="labelRow">
-              <label for="tileAccent">Accent</label>
-              <div class="val">Optional</div>
-            </div>
-            <select class="select" id="tileAccent">
-              <option value="">Default</option>
-              <option value="#3b82f6">Blue</option>
-              <option value="#22c55e">Green</option>
-              <option value="#f59e0b">Amber</option>
-              <option value="#ef4444">Red</option>
-              <option value="#a855f7">Purple</option>
-              <option value="#14b8a6">Teal</option>
-              <option value="#64748b">Slate</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3>Audio clip (optional)</h3>
-          <div class="control">
-            <div class="labelRow">
-              <label for="tileAudio">Upload audio</label>
-              <div class="val">For Audio mode</div>
-            </div>
-            <input class="text" id="tileAudio" type="file" accept="audio/*" />
-            <div class="sub">Stored locally. In Audio mode, this clip plays when you tap the tile.</div>
-          </div>
-
-          <div class="radioRow">
-            <button class="btn" type="button" id="tileTestBtn">▶️ Test</button>
-            <button class="btn danger" type="button" id="tileDeleteBtn">🗑️ Delete tile</button>
-          </div>
-
-          <div class="sub" id="tileAudioStatus">No audio clip stored.</div>
+      <!-- Privacy Notice -->
+      <div class="settings-section">
+        <div class="settings-section-title">🔏 Privacy Notice</div>
+        <div class="privacy-box" role="region" aria-label="Privacy notice">
+          <h4>What data is stored?</h4>
+          <ul>
+            <li>Communication boards and custom tiles you create.</li>
+            <li>Usage trends (tile tap counts and timestamps).</li>
+            <li>Settings preferences (theme, volume, speed, mode).</li>
+            <li>Uploaded voice samples (stored as Base64 in localStorage).</li>
+          </ul>
+          <h4 style="margin-top:10px;">Where is it stored?</h4>
+          <p>All data is stored <strong>exclusively on your device</strong> using browser localStorage. No data is ever sent to any server, analytics service, or third party.</p>
+          <h4 style="margin-top:10px;">How to delete?</h4>
+          <p>Use <strong>Restore Defaults</strong> above to erase all stored data. You can also clear localStorage via your browser's site settings.</p>
+          <h4 style="margin-top:10px;">Device sharing notice</h4>
+          <p>Data is visible to anyone with access to this device and browser. Lock the app when not in use to prevent unintended changes.</p>
+          <p style="margin-top:10px;font-style:italic;">Aligned with: GDPR, HIPAA, PIPEDA, LGPD, PDPA, PDPL, DPDPA, POPIA, Philippines DPA, PIPL, APPs, ASEAN DMF.</p>
         </div>
       </div>
+
+    </div><!-- /settings-body -->
+  </div><!-- /settings-sheet -->
+</div><!-- /settings-panel -->
+
+<!-- ===== PIN MODAL ===== -->
+<div class="modal-overlay" id="pin-modal" role="dialog" aria-modal="true" aria-labelledby="pin-modal-title" aria-hidden="true">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="pin-modal-title">🔓 Enter PIN to Unlock</h3>
+      <button class="sheet-close" id="pin-cancel" aria-label="Cancel">✕</button>
     </div>
-
-    <div class="dlgFoot">
-      <button class="btn" type="button" id="tileSaveBtn">💾 Save</button>
-      <button class="btn" type="button" data-action="closeDialog" data-target="tileDlg">Done</button>
+    <div class="modal-body">
+      <div class="pin-display" id="pin-display" aria-live="polite" aria-label="PIN entry">──────</div>
+      <div class="pin-pad" role="group" aria-label="PIN keypad">
+        <button class="pin-key" data-k="1" aria-label="1">1</button>
+        <button class="pin-key" data-k="2" aria-label="2">2</button>
+        <button class="pin-key" data-k="3" aria-label="3">3</button>
+        <button class="pin-key" data-k="4" aria-label="4">4</button>
+        <button class="pin-key" data-k="5" aria-label="5">5</button>
+        <button class="pin-key" data-k="6" aria-label="6">6</button>
+        <button class="pin-key" data-k="7" aria-label="7">7</button>
+        <button class="pin-key" data-k="8" aria-label="8">8</button>
+        <button class="pin-key" data-k="9" aria-label="9">9</button>
+        <button class="pin-key del" data-k="del" aria-label="Delete">⌫</button>
+        <button class="pin-key" data-k="0" aria-label="0">0</button>
+        <button class="pin-key ok" data-k="ok" aria-label="Confirm">✓</button>
+      </div>
+      <div class="pin-error hidden" id="pin-error" role="alert">Incorrect PIN. Please try again.</div>
     </div>
-  </dialog>
+  </div>
+</div>
 
-  <script>
-    (() => {
-      "use strict";
+<!-- ===== TILE EDIT MODAL ===== -->
+<div class="modal-overlay" id="tile-modal" role="dialog" aria-modal="true" aria-labelledby="tile-modal-title" aria-hidden="true">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="tile-modal-title">Edit Tile</h3>
+      <button class="sheet-close" id="tile-modal-close" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label" for="tile-label-input">Label</label>
+        <input type="text" class="form-input" id="tile-label-input" placeholder="e.g. Help" maxlength="20" aria-required="true">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Emoji / Icon</label>
+        <div class="emoji-picker-row" id="emoji-picker" role="listbox" aria-label="Choose emoji"></div>
+        <input type="text" class="form-input" id="tile-custom-emoji" placeholder="Or type emoji here" style="margin-top:8px;" maxlength="4" aria-label="Custom emoji">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Color</label>
+        <div class="color-row" id="color-picker" role="listbox" aria-label="Choose color"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="tile-audio-upload">Audio File (optional)</label>
+        <input type="file" accept="audio/*" id="tile-audio-upload" class="form-input" aria-describedby="tile-audio-hint" style="height:auto;padding:8px;">
+        <div id="tile-audio-hint" style="font-size:0.73rem;color:var(--text-secondary);margin-top:4px;">Stored locally on device only.</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-action danger" id="tile-delete-btn">🗑️ Delete</button>
+      <button class="btn-action" id="tile-cancel-btn">Cancel</button>
+      <button class="btn-action primary" id="tile-save-btn">Save</button>
+    </div>
+  </div>
+</div>
 
-      // ====== Constants ======
-      const APP_STORAGE_KEY = "talkboard.state.v1";
-      const APP_DB_NAME = "talkboard.db.v1";
-      const APP_DB_STORE = "audio";
-      const LOCK_CODE = "123456";
+<!-- ===== BOARD MODAL ===== -->
+<div class="modal-overlay" id="board-modal" role="dialog" aria-modal="true" aria-labelledby="board-modal-title" aria-hidden="true">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="board-modal-title">New Board</h3>
+      <button class="sheet-close" id="board-modal-close" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label" for="board-name-input">Board Name</label>
+        <input type="text" class="form-input" id="board-name-input" placeholder="e.g. My Favorites" maxlength="30" aria-required="true">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Icon</label>
+        <div class="emoji-picker-row" id="board-emoji-picker" role="listbox" aria-label="Choose board icon"></div>
+        <input type="text" class="form-input" id="board-custom-emoji" placeholder="Or type emoji" style="margin-top:8px;" maxlength="4" aria-label="Custom board icon">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-action" id="board-cancel-btn">Cancel</button>
+      <button class="btn-action primary" id="board-save-btn">Create Board</button>
+    </div>
+  </div>
+</div>
 
-      const DEFAULT_STATE = () => ({
-        version: 1,
-        tab: "home",
-        locked: true, // locked by default (prevents accidental edits)
-        settings: {
-          outputMode: "tts",      // "tts" | "audio"
-          audioFallbackTTS: true, // if audio clip missing, speak via TTS
-          theme: "light",         // "light" | "dark"
-          volume: 1.0,
-          rate: 1.0,
-          voiceURI: "",
-          haptics: true,
-          hapticStrength: "medium", // soft|medium|strong
-        },
-        ui: {
-          search: ""
-        },
-        message: "",
-        activeBoardId: "home",
-        trends: {}, // tileId -> count
-        boards: [
-          {
-            id: "home",
-            system: true,
-            name: "Home",
-            icon: "🏠",
-            tiles: [
-              { id: "t_yes", system: true, text: "Yes", emoji: "✅", accent: "#22c55e", hasAudio: false },
-              { id: "t_no", system: true, text: "No", emoji: "❌", accent: "#ef4444", hasAudio: false },
-              { id: "t_help", system: true, text: "Help", emoji: "🆘", accent: "#3b82f6", hasAudio: false },
-              { id: "t_stop", system: true, text: "Stop", emoji: "✋", accent: "#f59e0b", hasAudio: false },
-              { id: "t_more", system: true, text: "More", emoji: "➕", accent: "#3b82f6", hasAudio: false },
-              { id: "t_done", system: true, text: "All done", emoji: "✅", accent: "#64748b", hasAudio: false },
-              { id: "t_please", system: true, text: "Please", emoji: "🙏", accent: "#a855f7", hasAudio: false },
-              { id: "t_thanks", system: true, text: "Thank you", emoji: "💛", accent: "#f59e0b", hasAudio: false },
-              { id: "t_hello", system: true, text: "Hello", emoji: "👋", accent: "#14b8a6", hasAudio: false },
-              { id: "t_bye", system: true, text: "Goodbye", emoji: "👋", accent: "#14b8a6", hasAudio: false },
-              { id: "t_iwant", system: true, text: "I want", emoji: "🙋", accent: "#3b82f6", hasAudio: false },
-              { id: "t_ineed", system: true, text: "I need", emoji: "🧩", accent: "#3b82f6", hasAudio: false },
-              { id: "t_bath", system: true, text: "Bathroom", emoji: "🚻", accent: "#64748b", hasAudio: false },
-              { id: "t_water", system: true, text: "Water", emoji: "💧", accent: "#3b82f6", hasAudio: false },
-              { id: "t_food", system: true, text: "Food", emoji: "🍽️", accent: "#22c55e", hasAudio: false },
-              { id: "t_pain", system: true, text: "I am in pain", emoji: "🤕", accent: "#ef4444", hasAudio: false },
-              { id: "t_quiet", system: true, text: "Quiet", emoji: "🤫", accent: "#64748b", hasAudio: false },
-              { id: "t_loud", system: true, text: "Too loud", emoji: "🔊", accent: "#f59e0b", hasAudio: false },
-              { id: "t_break", system: true, text: "Break", emoji: "⏸️", accent: "#64748b", hasAudio: false },
-              { id: "t_sorry", system: true, text: "Sorry", emoji: "😔", accent: "#a855f7", hasAudio: false },
-            ]
-          },
-          {
-            id: "needs",
-            system: true,
-            name: "Needs",
-            icon: "🧩",
-            tiles: [
-              { id: "n_toilet", system: true, text: "I need the toilet", emoji: "🚻", accent: "#64748b", hasAudio: false },
-              { id: "n_hungry", system: true, text: "I am hungry", emoji: "🍎", accent: "#22c55e", hasAudio: false },
-              { id: "n_thirsty", system: true, text: "I am thirsty", emoji: "🥤", accent: "#3b82f6", hasAudio: false },
-              { id: "n_sleep", system: true, text: "I am tired", emoji: "😴", accent: "#64748b", hasAudio: false },
-              { id: "n_hurt", system: true, text: "It hurts", emoji: "🤕", accent: "#ef4444", hasAudio: false },
-              { id: "n_cold", system: true, text: "I am cold", emoji: "🥶", accent: "#3b82f6", hasAudio: false },
-              { id: "n_hot", system: true, text: "I am hot", emoji: "🥵", accent: "#f59e0b", hasAudio: false },
-              { id: "n_drink", system: true, text: "Drink", emoji: "🥤", accent: "#3b82f6", hasAudio: false },
-              { id: "n_eat", system: true, text: "Eat", emoji: "🍽️", accent: "#22c55e", hasAudio: false },
-              { id: "n_help", system: true, text: "Please help me", emoji: "🆘", accent: "#3b82f6", hasAudio: false },
-            ]
-          },
-          {
-            id: "feelings",
-            system: true,
-            name: "Feelings",
-            icon: "🙂",
-            tiles: [
-              { id: "f_happy", system: true, text: "Happy", emoji: "😊", accent: "#22c55e", hasAudio: false },
-              { id: "f_sad", system: true, text: "Sad", emoji: "😢", accent: "#3b82f6", hasAudio: false },
-              { id: "f_angry", system: true, text: "Angry", emoji: "😠", accent: "#ef4444", hasAudio: false },
-              { id: "f_scared", system: true, text: "Scared", emoji: "😨", accent: "#a855f7", hasAudio: false },
-              { id: "f_bored", system: true, text: "Bored", emoji: "😐", accent: "#64748b", hasAudio: false },
-              { id: "f_excited", system: true, text: "Excited", emoji: "🤩", accent: "#f59e0b", hasAudio: false },
-              { id: "f_calm", system: true, text: "Calm", emoji: "😌", accent: "#14b8a6", hasAudio: false },
-              { id: "f_nervous", system: true, text: "Nervous", emoji: "😬", accent: "#a855f7", hasAudio: false },
-              { id: "f_ok", system: true, text: "I am okay", emoji: "👌", accent: "#22c55e", hasAudio: false },
-              { id: "f_notok", system: true, text: "Not okay", emoji: "🙅", accent: "#ef4444", hasAudio: false },
-            ]
-          },
-          {
-            id: "actions",
-            system: true,
-            name: "Actions",
-            icon: "🏃",
-            tiles: [
-              { id: "a_go", system: true, text: "Go", emoji: "➡️", accent: "#3b82f6", hasAudio: false },
-              { id: "a_come", system: true, text: "Come here", emoji: "🫴", accent: "#14b8a6", hasAudio: false },
-              { id: "a_wait", system: true, text: "Wait", emoji: "⏳", accent: "#64748b", hasAudio: false },
-              { id: "a_sit", system: true, text: "Sit", emoji: "🪑", accent: "#64748b", hasAudio: false },
-              { id: "a_stand", system: true, text: "Stand", emoji: "🧍", accent: "#64748b", hasAudio: false },
-              { id: "a_play", system: true, text: "Play", emoji: "🧸", accent: "#22c55e", hasAudio: false },
-              { id: "a_read", system: true, text: "Read", emoji: "📖", accent: "#a855f7", hasAudio: false },
-              { id: "a_listen", system: true, text: "Listen", emoji: "👂", accent: "#14b8a6", hasAudio: false },
-              { id: "a_watch", system: true, text: "Watch", emoji: "👀", accent: "#f59e0b", hasAudio: false },
-              { id: "a_walk", system: true, text: "Walk", emoji: "🚶", accent: "#22c55e", hasAudio: false },
-            ]
-          },
-          {
-            id: "questions",
-            system: true,
-            name: "Questions",
-            icon: "❓",
-            tiles: [
-              { id: "q_what", system: true, text: "What?", emoji: "❓", accent: "#3b82f6", hasAudio: false },
-              { id: "q_where", system: true, text: "Where?", emoji: "📍", accent: "#14b8a6", hasAudio: false },
-              { id: "q_when", system: true, text: "When?", emoji: "🕒", accent: "#64748b", hasAudio: false },
-              { id: "q_why", system: true, text: "Why?", emoji: "🤔", accent: "#a855f7", hasAudio: false },
-              { id: "q_who", system: true, text: "Who?", emoji: "👤", accent: "#64748b", hasAudio: false },
-              { id: "q_how", system: true, text: "How?", emoji: "🧭", accent: "#f59e0b", hasAudio: false },
-              { id: "q_can", system: true, text: "Can I?", emoji: "✅", accent: "#22c55e", hasAudio: false },
-              { id: "q_again", system: true, text: "Again", emoji: "🔁", accent: "#3b82f6", hasAudio: false },
-              { id: "q_stop", system: true, text: "Stop", emoji: "✋", accent: "#ef4444", hasAudio: false },
-              { id: "q_yesno", system: true, text: "Yes or no?", emoji: "⚖️", accent: "#64748b", hasAudio: false },
-            ]
-          },
-        ]
-      });
+<!-- ===== CONFIRM MODAL ===== -->
+<div class="modal-overlay" id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title" aria-hidden="true">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="confirm-title">⚠️ Confirm</h3>
+    </div>
+    <div class="modal-body">
+      <p id="confirm-msg" style="font-size:0.9rem;color:var(--text-secondary);"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-action" id="confirm-cancel">Cancel</button>
+      <button class="btn-action danger" id="confirm-ok">Confirm</button>
+    </div>
+  </div>
+</div>
 
-      // ====== DOM ======
-      const view = document.getElementById("view");
-      const messageBox = document.getElementById("messageBox");
-      const speakMsgBtn = document.getElementById("speakMsgBtn");
-      const clearMsgBtn = document.getElementById("clearMsgBtn");
-      const backspaceBtn = document.getElementById("backspaceBtn");
+<!-- ===== JAVASCRIPT ===== -->
+<script>
+'use strict';
 
-      const settingsDlg = document.getElementById("settingsDlg");
-      const lockDlg = document.getElementById("lockDlg");
-      const boardDlg = document.getElementById("boardDlg");
-      const tileDlg = document.getElementById("tileDlg");
+// ============================
+// CONSTANTS & DEFAULT DATA
+// ============================
 
-      const lockBtn = document.getElementById("lockBtn");
-      const settingsBtn = document.getElementById("settingsBtn");
+const CORRECT_PIN = '123456';
+const STORAGE_KEY = 'talkboard_v2';
 
-      const netDot = document.getElementById("netDot");
-      const netText = document.getElementById("netText");
+// Sanitize text to prevent XSS
+function sanitize(str) {
+  if (typeof str !== 'string') return '';
+  return str.replace(/[<>"'&]/g, c => ({'<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','&':'&amp;'}[c]));
+}
 
-      const toast = document.getElementById("toast");
-      const toastIcon = document.getElementById("toastIcon");
-      const toastTitle = document.getElementById("toastTitle");
-      const toastBody = document.getElementById("toastBody");
+// ============================
+// DEFAULT BOARDS & TILES
+// ============================
 
-      // Settings UI
-      const volRange = document.getElementById("volRange");
-      const volVal = document.getElementById("volVal");
-      const rateRange = document.getElementById("rateRange");
-      const rateVal = document.getElementById("rateVal");
-      const voiceSelect = document.getElementById("voiceSelect");
-      const voiceCount = document.getElementById("voiceCount");
-      const fallbackAudioInput = document.getElementById("fallbackAudio");
-      const fallbackSwitch = document.getElementById("fallbackSwitch");
-      const hapticSwitch = document.getElementById("hapticSwitch");
-      const hapticStrength = document.getElementById("hapticStrength");
-      const hapVal = document.getElementById("hapVal");
+const DEFAULT_BOARDS = [
+  {
+    id: 'home',
+    name: 'Quick Access',
+    icon: '⭐',
+    isStandard: true,
+    tiles: [
+      {id:'t_yes',label:'Yes',emoji:'✅',color:'green'},
+      {id:'t_no',label:'No',emoji:'❌',color:'red'},
+      {id:'t_help',label:'Help',emoji:'🆘',color:'red'},
+      {id:'t_more',label:'More',emoji:'➕',color:'blue'},
+      {id:'t_stop',label:'Stop',emoji:'🛑',color:'red'},
+      {id:'t_please',label:'Please',emoji:'🙏',color:'purple'},
+      {id:'t_thankyou',label:'Thank You',emoji:'😊',color:'green'},
+      {id:'t_sorry',label:'Sorry',emoji:'😔',color:'orange'},
+      {id:'t_ilike',label:'I Like',emoji:'👍',color:'green'},
+      {id:'t_idont',label:'I Don\'t',emoji:'👎',color:'orange'},
+      {id:'t_want',label:'I Want',emoji:'🤲',color:'blue'},
+      {id:'t_need',label:'I Need',emoji:'‼️',color:'red'},
+      {id:'t_finished',label:'Finished',emoji:'✔️',color:'teal'},
+      {id:'t_wait',label:'Wait',emoji:'⏳',color:'yellow'},
+      {id:'t_again',label:'Again',emoji:'🔁',color:'blue'},
+      {id:'t_my',label:'My',emoji:'👤',color:'purple'},
+    ]
+  },
+  {
+    id: 'feelings',
+    name: 'Feelings',
+    icon: '😊',
+    isStandard: true,
+    tiles: [
+      {id:'f_happy',label:'Happy',emoji:'😄',color:'yellow'},
+      {id:'f_sad',label:'Sad',emoji:'😢',color:'blue'},
+      {id:'f_angry',label:'Angry',emoji:'😠',color:'red'},
+      {id:'f_scared',label:'Scared',emoji:'😨',color:'purple'},
+      {id:'f_surprised',label:'Surprised',emoji:'😲',color:'orange'},
+      {id:'f_tired',label:'Tired',emoji:'😴',color:'teal'},
+      {id:'f_sick',label:'Sick',emoji:'🤒',color:'green'},
+      {id:'f_pain',label:'Pain',emoji:'😣',color:'red'},
+      {id:'f_good',label:'Good',emoji:'😊',color:'green'},
+      {id:'f_bad',label:'Bad',emoji:'😕',color:'orange'},
+      {id:'f_love',label:'Love',emoji:'❤️',color:'pink'},
+      {id:'f_bored',label:'Bored',emoji:'😑',color:'yellow'},
+      {id:'f_excited',label:'Excited',emoji:'🎉',color:'orange'},
+      {id:'f_calm',label:'Calm',emoji:'😌',color:'teal'},
+      {id:'f_confused',label:'Confused',emoji:'😕',color:'orange'},
+      {id:'f_hungry',label:'Hungry',emoji:'😋',color:'yellow'},
+    ]
+  },
+  {
+    id: 'food',
+    name: 'Food & Drink',
+    icon: '🍎',
+    isStandard: true,
+    tiles: [
+      {id:'fd_water',label:'Water',emoji:'💧',color:'blue'},
+      {id:'fd_food',label:'Food',emoji:'🍽️',color:'orange'},
+      {id:'fd_milk',label:'Milk',emoji:'🥛',color:'blue'},
+      {id:'fd_juice',label:'Juice',emoji:'🧃',color:'orange'},
+      {id:'fd_snack',label:'Snack',emoji:'🍪',color:'yellow'},
+      {id:'fd_apple',label:'Apple',emoji:'🍎',color:'red'},
+      {id:'fd_banana',label:'Banana',emoji:'🍌',color:'yellow'},
+      {id:'fd_bread',label:'Bread',emoji:'🍞',color:'orange'},
+      {id:'fd_chicken',label:'Chicken',emoji:'🍗',color:'orange'},
+      {id:'fd_rice',label:'Rice',emoji:'🍚',color:'teal'},
+      {id:'fd_pizza',label:'Pizza',emoji:'🍕',color:'orange'},
+      {id:'fd_burger',label:'Burger',emoji:'🍔',color:'orange'},
+      {id:'fd_soup',label:'Soup',emoji:'🍲',color:'red'},
+      {id:'fd_cake',label:'Cake',emoji:'🎂',color:'pink'},
+      {id:'fd_coffee',label:'Coffee',emoji:'☕',color:'orange'},
+      {id:'fd_tea',label:'Tea',emoji:'🍵',color:'green'},
+    ]
+  },
+  {
+    id: 'actions',
+    name: 'Actions',
+    icon: '🏃',
+    isStandard: true,
+    tiles: [
+      {id:'a_go',label:'Go',emoji:'🚶',color:'green'},
+      {id:'a_come',label:'Come',emoji:'🙋',color:'blue'},
+      {id:'a_eat',label:'Eat',emoji:'🍴',color:'orange'},
+      {id:'a_drink',label:'Drink',emoji:'🥤',color:'blue'},
+      {id:'a_sleep',label:'Sleep',emoji:'😴',color:'purple'},
+      {id:'a_sit',label:'Sit',emoji:'🪑',color:'teal'},
+      {id:'a_stand',label:'Stand',emoji:'🧍',color:'green'},
+      {id:'a_play',label:'Play',emoji:'🎮',color:'blue'},
+      {id:'a_read',label:'Read',emoji:'📖',color:'teal'},
+      {id:'a_write',label:'Write',emoji:'✏️',color:'orange'},
+      {id:'a_listen',label:'Listen',emoji:'👂',color:'purple'},
+      {id:'a_look',label:'Look',emoji:'👁️',color:'blue'},
+      {id:'a_give',label:'Give',emoji:'🫳',color:'green'},
+      {id:'a_take',label:'Take',emoji:'🫴',color:'orange'},
+      {id:'a_open',label:'Open',emoji:'📂',color:'yellow'},
+      {id:'a_close',label:'Close',emoji:'📁',color:'red'},
+    ]
+  },
+  {
+    id: 'people',
+    name: 'People',
+    icon: '👨‍👩‍👧‍👦',
+    isStandard: true,
+    tiles: [
+      {id:'p_me',label:'Me',emoji:'👤',color:'blue'},
+      {id:'p_you',label:'You',emoji:'👉',color:'green'},
+      {id:'p_mom',label:'Mom',emoji:'👩',color:'pink'},
+      {id:'p_dad',label:'Dad',emoji:'👨',color:'blue'},
+      {id:'p_friend',label:'Friend',emoji:'🤝',color:'green'},
+      {id:'p_teacher',label:'Teacher',emoji:'👩‍🏫',color:'teal'},
+      {id:'p_doctor',label:'Doctor',emoji:'👨‍⚕️',color:'red'},
+      {id:'p_family',label:'Family',emoji:'👨‍👩‍👧‍👦',color:'orange'},
+      {id:'p_baby',label:'Baby',emoji:'👶',color:'pink'},
+      {id:'p_boy',label:'Boy',emoji:'👦',color:'blue'},
+      {id:'p_girl',label:'Girl',emoji:'👧',color:'pink'},
+      {id:'p_everyone',label:'Everyone',emoji:'👥',color:'purple'},
+    ]
+  },
+  {
+    id: 'places',
+    name: 'Places',
+    icon: '📍',
+    isStandard: true,
+    tiles: [
+      {id:'pl_home',label:'Home',emoji:'🏠',color:'green'},
+      {id:'pl_school',label:'School',emoji:'🏫',color:'blue'},
+      {id:'pl_hospital',label:'Hospital',emoji:'🏥',color:'red'},
+      {id:'pl_store',label:'Store',emoji:'🏪',color:'orange'},
+      {id:'pl_park',label:'Park',emoji:'🌳',color:'green'},
+      {id:'pl_toilet',label:'Toilet',emoji:'🚽',color:'blue'},
+      {id:'pl_bedroom',label:'Bedroom',emoji:'🛏️',color:'purple'},
+      {id:'pl_kitchen',label:'Kitchen',emoji:'🍳',color:'orange'},
+      {id:'pl_outside',label:'Outside',emoji:'🌤️',color:'teal'},
+      {id:'pl_inside',label:'Inside',emoji:'🏠',color:'blue'},
+      {id:'pl_car',label:'Car',emoji:'🚗',color:'red'},
+      {id:'pl_bus',label:'Bus',emoji:'🚌',color:'orange'},
+    ]
+  },
+  {
+    id: 'social',
+    name: 'Social',
+    icon: '💬',
+    isStandard: true,
+    tiles: [
+      {id:'s_hello',label:'Hello',emoji:'👋',color:'yellow'},
+      {id:'s_bye',label:'Goodbye',emoji:'👋',color:'orange'},
+      {id:'s_morning',label:'Good Morning',emoji:'🌅',color:'yellow'},
+      {id:'s_night',label:'Good Night',emoji:'🌙',color:'purple'},
+      {id:'s_how',label:'How are you?',emoji:'🤔',color:'blue'},
+      {id:'s_fine',label:'I\'m Fine',emoji:'😊',color:'green'},
+      {id:'s_name',label:'My Name is',emoji:'🏷️',color:'teal'},
+      {id:'s_what',label:'What?',emoji:'❓',color:'orange'},
+      {id:'s_where',label:'Where?',emoji:'📍',color:'blue'},
+      {id:'s_when',label:'When?',emoji:'🕐',color:'purple'},
+      {id:'s_who',label:'Who?',emoji:'👤',color:'green'},
+      {id:'s_why',label:'Why?',emoji:'🤷',color:'orange'},
+    ]
+  },
+  {
+    id: 'body',
+    name: 'Body',
+    icon: '🫀',
+    isStandard: true,
+    tiles: [
+      {id:'b_head',label:'Head',emoji:'🤕',color:'orange'},
+      {id:'b_tummy',label:'Tummy',emoji:'🤢',color:'green'},
+      {id:'b_back',label:'Back',emoji:'😣',color:'red'},
+      {id:'b_arm',label:'Arm',emoji:'💪',color:'blue'},
+      {id:'b_leg',label:'Leg',emoji:'🦵',color:'orange'},
+      {id:'b_foot',label:'Foot',emoji:'🦶',color:'teal'},
+      {id:'b_hand',label:'Hand',emoji:'✋',color:'yellow'},
+      {id:'b_eye',label:'Eye',emoji:'👁️',color:'blue'},
+      {id:'b_ear',label:'Ear',emoji:'👂',color:'pink'},
+      {id:'b_mouth',label:'Mouth',emoji:'👄',color:'red'},
+      {id:'b_nose',label:'Nose',emoji:'👃',color:'orange'},
+      {id:'b_hot',label:'Hot',emoji:'🥵',color:'red'},
+      {id:'b_cold',label:'Cold',emoji:'🥶',color:'blue'},
+      {id:'b_itchy',label:'Itchy',emoji:'😖',color:'yellow'},
+      {id:'b_dizzy',label:'Dizzy',emoji:'😵‍💫',color:'purple'},
+      {id:'b_breathe',label:'Can\'t Breathe',emoji:'😮‍💨',color:'red'},
+    ]
+  }
+];
 
-      const installBtn = document.getElementById("installBtn");
-      const downloadSwBtn = document.getElementById("downloadSwBtn");
-      const swStatus = document.getElementById("swStatus");
-      const swPill = document.getElementById("swPill");
+// ============================
+// STATE
+// ============================
 
-      const exportBtn = document.getElementById("exportBtn");
-      const importFile = document.getElementById("importFile");
-      const resetBtn = document.getElementById("resetBtn");
-      const clearTrendingBtn = document.getElementById("clearTrendingBtn");
+let STATE = {
+  isLocked: true,
+  currentTab: 'home',
+  currentBoardId: 'home',
+  outputMode: 'tts',
+  theme: 'light',
+  ttsVolume: 1,
+  ttsRate: 1,
+  ttsVoiceURI: '',
+  haptic: true,
+  customBoards: [],      // Array of board objects user has created
+  trendingData: {},      // { tileId: { label, emoji, taps: [{ts: timestamp}] } }
+  voiceSample: null,     // base64 string
+  message: []            // Array of {label, emoji}
+};
 
-      // Lock UI
-      const pinDots = document.getElementById("pinDots");
-      const keys = document.getElementById("keys");
-      const lockTitle = document.getElementById("lockTitle");
-      const lockSub = document.getElementById("lockSub");
+// ============================
+// STORAGE
+// ============================
 
-      // Board editor UI
-      const boardDlgTitle = document.getElementById("boardDlgTitle");
-      const boardName = document.getElementById("boardName");
-      const boardIcon = document.getElementById("boardIcon");
-      const boardSaveBtn = document.getElementById("boardSaveBtn");
-      const boardDeleteBtn = document.getElementById("boardDeleteBtn");
+function saveState() {
+  try {
+    const toSave = {
+      currentBoardId: STATE.currentBoardId,
+      outputMode: STATE.outputMode,
+      theme: STATE.theme,
+      ttsVolume: STATE.ttsVolume,
+      ttsRate: STATE.ttsRate,
+      ttsVoiceURI: STATE.ttsVoiceURI,
+      haptic: STATE.haptic,
+      customBoards: STATE.customBoards,
+      trendingData: STATE.trendingData,
+      voiceSample: STATE.voiceSample
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+  } catch(e) { console.warn('Storage save failed', e); }
+}
 
-      // Tile editor UI
-      const tileDlgTitle = document.getElementById("tileDlgTitle");
-      const tileText = document.getElementById("tileText");
-      const tileEmoji = document.getElementById("tileEmoji");
-      const tileAccent = document.getElementById("tileAccent");
-      const tileAudio = document.getElementById("tileAudio");
-      const tileAudioStatus = document.getElementById("tileAudioStatus");
-      const tileSaveBtn = document.getElementById("tileSaveBtn");
-      const tileDeleteBtn = document.getElementById("tileDeleteBtn");
-      const tileTestBtn = document.getElementById("tileTestBtn");
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    Object.assign(STATE, {
+      currentBoardId: saved.currentBoardId || 'home',
+      outputMode: saved.outputMode || 'tts',
+      theme: saved.theme || 'light',
+      ttsVolume: saved.ttsVolume ?? 1,
+      ttsRate: saved.ttsRate ?? 1,
+      ttsVoiceURI: saved.ttsVoiceURI || '',
+      haptic: saved.haptic !== undefined ? saved.haptic : true,
+      customBoards: Array.isArray(saved.customBoards) ? saved.customBoards : [],
+      trendingData: saved.trendingData || {},
+      voiceSample: saved.voiceSample || null
+    });
+  } catch(e) { console.warn('Storage load failed', e); }
+}
 
-      // ====== State ======
-      let state = loadState() ?? DEFAULT_STATE();
-      let saveTimer = null;
+// ============================
+// UTILITY
+// ============================
 
-      let voices = [];
-      let deferredInstallPrompt = null;
+function toast(msg, duration = 2200) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), duration);
+}
 
-      // Editor context
-      let editingBoardId = null;
-      let editingTile = { boardId: null, tileId: null };
+function vibrate(ms = 30) {
+  if (STATE.haptic && navigator.vibrate) {
+    try { navigator.vibrate(ms); } catch(e) {}
+  }
+}
 
-      // Lock PIN
-      let enteredPin = "";
+function showConfirm(msg) {
+  return new Promise(resolve => {
+    document.getElementById('confirm-msg').textContent = msg;
+    openModal('confirm-modal');
+    const ok = document.getElementById('confirm-ok');
+    const cancel = document.getElementById('confirm-cancel');
+    function cleanup(val) {
+      closeModal('confirm-modal');
+      ok.removeEventListener('click', onOk);
+      cancel.removeEventListener('click', onCancel);
+      resolve(val);
+    }
+    function onOk() { cleanup(true); }
+    function onCancel() { cleanup(false); }
+    ok.addEventListener('click', onOk);
+    cancel.addEventListener('click', onCancel);
+  });
+}
 
-      // ====== IndexedDB for audio blobs ======
-      const idb = {
-        db: null,
-        async open(){
-          if (this.db) return this.db;
-          return new Promise((resolve, reject) => {
-            const req = indexedDB.open(APP_DB_NAME, 1);
-            req.onupgradeneeded = () => {
-              const db = req.result;
-              if (!db.objectStoreNames.contains(APP_DB_STORE)) {
-                db.createObjectStore(APP_DB_STORE);
-              }
-            };
-            req.onsuccess = () => { this.db = req.result; resolve(this.db); };
-            req.onerror = () => reject(req.error);
-          });
-        },
-        async get(key){
-          const db = await this.open();
-          return new Promise((resolve, reject) => {
-            const tx = db.transaction(APP_DB_STORE, "readonly");
-            const store = tx.objectStore(APP_DB_STORE);
-            const req = store.get(key);
-            req.onsuccess = () => resolve(req.result ?? null);
-            req.onerror = () => reject(req.error);
-          });
-        },
-        async set(key, val){
-          const db = await this.open();
-          return new Promise((resolve, reject) => {
-            const tx = db.transaction(APP_DB_STORE, "readwrite");
-            const store = tx.objectStore(APP_DB_STORE);
-            const req = store.put(val, key);
-            req.onsuccess = () => resolve(true);
-            req.onerror = () => reject(req.error);
-          });
-        },
-        async del(key){
-          const db = await this.open();
-          return new Promise((resolve, reject) => {
-            const tx = db.transaction(APP_DB_STORE, "readwrite");
-            const store = tx.objectStore(APP_DB_STORE);
-            const req = store.delete(key);
-            req.onsuccess = () => resolve(true);
-            req.onerror = () => reject(req.error);
-          });
-        },
-        async clear(){
-          const db = await this.open();
-          return new Promise((resolve, reject) => {
-            const tx = db.transaction(APP_DB_STORE, "readwrite");
-            const store = tx.objectStore(APP_DB_STORE);
-            const req = store.clear();
-            req.onsuccess = () => resolve(true);
-            req.onerror = () => reject(req.error);
-          });
-        }
-      };
+function openModal(id) {
+  const el = document.getElementById(id);
+  el.classList.add('open');
+  el.removeAttribute('aria-hidden');
+  // Focus first focusable
+  setTimeout(() => {
+    const first = el.querySelector('button, input, select, [tabindex]');
+    if (first) first.focus();
+  }, 100);
+  document.addEventListener('keydown', handleModalEsc);
+}
 
-      const audioPlayer = new Audio();
-      audioPlayer.preload = "auto";
+function closeModal(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('open');
+  el.setAttribute('aria-hidden', 'true');
+  document.removeEventListener('keydown', handleModalEsc);
+}
 
-      // ====== Helpers ======
-      function uid(prefix="id"){
-        if (crypto?.randomUUID) return prefix + "_" + crypto.randomUUID();
-        return prefix + "_" + Math.random().toString(16).slice(2) + Date.now().toString(16);
-      }
+function handleModalEsc(e) {
+  if (e.key === 'Escape') {
+    // Close topmost open modal
+    const modals = document.querySelectorAll('.modal-overlay.open, #settings-panel.open');
+    modals.forEach(m => {
+      m.classList.remove('open');
+      m.setAttribute('aria-hidden', 'true');
+    });
+    document.removeEventListener('keydown', handleModalEsc);
+  }
+}
 
-      function deepClone(obj){
-        return JSON.parse(JSON.stringify(obj));
-      }
+function getAllBoards() {
+  return [...DEFAULT_BOARDS, ...STATE.customBoards];
+}
 
-      function getBoard(id){
-        return state.boards.find(b => b.id === id) ?? null;
-      }
+function getBoardById(id) {
+  return getAllBoards().find(b => b.id === id);
+}
 
-      function getTile(boardId, tileId){
-        const b = getBoard(boardId);
-        if (!b) return null;
-        return b.tiles.find(t => t.id === tileId) ?? null;
-      }
+// ============================
+// THEME
+// ============================
 
-      function isUnlocked(){ return !state.locked; }
+function applyTheme(t) {
+  STATE.theme = t;
+  document.documentElement.setAttribute('data-theme', t);
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) metaTheme.content = t === 'dark' ? '#1C1F2A' : '#1976D2';
+}
 
-      function canEditBoard(board){
-        return isUnlocked() && board && !board.system;
-      }
+// ============================
+// TTS
+// ============================
 
-      function canEditTile(board, tile){
-        return isUnlocked() && board && !board.system && tile && !tile.system;
-      }
+let voices = [];
 
-      function scheduleSave(){
-        if (saveTimer) return;
-        saveTimer = setTimeout(() => {
-          saveTimer = null;
-          try { localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(state)); } catch {}
-        }, 180);
-      }
+function loadVoices() {
+  voices = speechSynthesis.getVoices();
+  populateVoiceSelect();
+}
 
-      function loadState(){
-        try{
-          const raw = localStorage.getItem(APP_STORAGE_KEY);
-          if (!raw) return null;
-          const parsed = JSON.parse(raw);
-          // Lightweight migration guards
-          if (!parsed || typeof parsed !== "object") return null;
-          if (!parsed.version) parsed.version = 1;
-          return parsed;
-        } catch {
-          return null;
-        }
-      }
+function populateVoiceSelect() {
+  const sel = document.getElementById('setting-voice');
+  sel.innerHTML = '';
+  const opt0 = document.createElement('option');
+  opt0.value = '';
+  opt0.textContent = '— Default —';
+  sel.appendChild(opt0);
+  voices.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v.voiceURI;
+    opt.textContent = `${v.name} (${v.lang})`;
+    if (v.voiceURI === STATE.ttsVoiceURI) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
 
-      function setTheme(theme){
-        document.documentElement.setAttribute("data-theme", theme);
-        state.settings.theme = theme;
-        scheduleSave();
-      }
+function speakText(text) {
+  if (!text) return;
+  if ('speechSynthesis' in window) {
+    speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.volume = STATE.ttsVolume;
+    utt.rate = STATE.ttsRate;
+    if (STATE.ttsVoiceURI) {
+      const v = voices.find(v => v.voiceURI === STATE.ttsVoiceURI);
+      if (v) utt.voice = v;
+    }
+    speechSynthesis.speak(utt);
+  }
+}
 
-      function updateNetUI(){
-        const online = navigator.onLine;
-        netDot.classList.toggle("offline", !online);
-        netText.textContent = online ? "Online" : "Offline";
-      }
+// ============================
+// TRENDING
+// ============================
 
-      function toastMsg(title, body, icon="ℹ️"){
-        toastIcon.textContent = icon;
-        toastTitle.textContent = title;
-        toastBody.textContent = body;
-        toast.classList.add("show");
-        clearTimeout(toast._t);
-        toast._t = setTimeout(() => toast.classList.remove("show"), 3200);
-      }
+function recordTap(tile) {
+  const id = tile.id;
+  if (!STATE.trendingData[id]) {
+    STATE.trendingData[id] = { label: tile.label, emoji: tile.emoji, taps: [] };
+  } else {
+    STATE.trendingData[id].label = tile.label;
+    STATE.trendingData[id].emoji = tile.emoji;
+  }
+  STATE.trendingData[id].taps.push({ ts: Date.now() });
+  saveState();
+}
 
-      function vibrateTap(){
-        if (!state.settings.haptics) return;
-        if (!("vibrate" in navigator)) return;
-        const s = state.settings.hapticStrength;
-        const ms = (s === "soft") ? 10 : (s === "strong") ? 40 : 20;
-        navigator.vibrate(ms);
-      }
+function getTrendingFiltered(period) {
+  const now = Date.now();
+  const cutoff = {
+    day: now - 86400000,
+    week: now - 604800000,
+    month: now - 2592000000,
+    '6months': now - 15552000000,
+    all: 0
+  }[period] || 0;
 
-      function stopSpeech(){
-        try { speechSynthesis.cancel(); } catch {}
-      }
+  const result = [];
+  Object.entries(STATE.trendingData).forEach(([id, data]) => {
+    const filteredTaps = data.taps.filter(t => t.ts >= cutoff);
+    if (filteredTaps.length > 0) {
+      result.push({ id, label: data.label, emoji: data.emoji, count: filteredTaps.length, taps: filteredTaps });
+    }
+  });
+  result.sort((a,b) => b.count - a.count);
+  return result;
+}
 
-      function speakText(text){
-        if (!text?.trim()) return;
-        if (!("speechSynthesis" in window)) {
-          toastMsg("TTS not supported", "This browser does not support Speech Synthesis.", "⚠️");
-          return;
-        }
+function renderTrending(period) {
+  const container = document.getElementById('trending-content');
+  const items = getTrendingFiltered(period);
 
-        stopSpeech();
-        const utt = new SpeechSynthesisUtterance(text);
-        utt.rate = clamp(state.settings.rate, 0.5, 2.0);
-        utt.volume = clamp(state.settings.volume, 0, 1);
-        if (state.settings.voiceURI) {
-          const v = voices.find(v => v.voiceURI === state.settings.voiceURI);
-          if (v) utt.voice = v;
-        }
-        speechSynthesis.speak(utt);
-      }
+  if (items.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><p>No usage data for this period.<br>Start tapping tiles to see trends!</p></div>`;
+    return;
+  }
 
-      function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+  const maxCount = items[0].count;
 
-      async function playAudioBlob(blob){
-        try{
-          const url = URL.createObjectURL(blob);
-          audioPlayer.src = url;
-          audioPlayer.volume = clamp(state.settings.volume, 0, 1);
-          await audioPlayer.play();
-          setTimeout(() => URL.revokeObjectURL(url), 1500);
-          return true;
-        } catch {
-          return false;
-        }
-      }
+  // Group by day
+  const byDay = {};
+  items.forEach(item => {
+    item.taps.forEach(tap => {
+      const d = new Date(tap.ts);
+      const key = d.toLocaleDateString(undefined, {year:'numeric',month:'short',day:'numeric'});
+      if (!byDay[key]) byDay[key] = {};
+      if (!byDay[key][item.id]) byDay[key][item.id] = { label: item.label, emoji: item.emoji, count: 0 };
+      byDay[key][item.id].count++;
+    });
+  });
 
-      async function activateTile(boardId, tileId, { appendToMessage = true } = {}){
-        const board = getBoard(boardId);
-        const tile = getTile(boardId, tileId);
-        if (!board || !tile) return;
+  let html = `<div class="section-title">Top Tiles</div><div class="trending-list">`;
 
-        vibrateTap();
-
-        // trending always increments (even when locked)
-        state.trends[tile.id] = (state.trends[tile.id] || 0) + 1;
-        scheduleSave();
-
-        // message builder
-        if (appendToMessage) {
-          const add = tile.text.trim();
-          const current = (state.message || "").trim();
-          state.message = current ? (current + " " + add) : add;
-          messageBox.value = state.message;
-          scheduleSave();
-        }
-
-        // output
-        if (state.settings.outputMode === "audio") {
-          // Try tile audio
-          if (tile.hasAudio) {
-            const blob = await idb.get("tile:" + tile.id);
-            if (blob) {
-              const ok = await playAudioBlob(blob);
-              if (ok) return;
-            }
-          }
-          // fallback audio (voice sample) in Audio mode
-          const fallbackBlob = await idb.get("fallbackAudio");
-          if (fallbackBlob) {
-            const ok = await playAudioBlob(fallbackBlob);
-            if (ok && !state.settings.audioFallbackTTS) return;
-          }
-          if (state.settings.audioFallbackTTS) speakText(tile.text);
-          else toastMsg("Audio missing", "No clip stored for this tile.", "🎵");
-          return;
-        }
-
-        // TTS mode
-        speakText(tile.text);
-      }
-
-      function setTab(tab){
-        state.tab = tab;
-        scheduleSave();
-        render();
-      }
-
-      function setActiveBoard(boardId){
-        state.activeBoardId = boardId;
-        scheduleSave();
-        render();
-      }
-
-      function escapeHtml(s){
-        return String(s)
-          .replaceAll("&", "&amp;")
-          .replaceAll("<", "&lt;")
-          .replaceAll(">", "&gt;")
-          .replaceAll('"', "&quot;")
-          .replaceAll("'", "&#39;");
-      }
-
-      function boardLabel(board){
-        const name = board?.name || "Board";
-        return `${board.icon ? board.icon + " " : ""}${name}`;
-      }
-
-      function render(){
-        // Tabs ARIA
-        document.querySelectorAll(".tab").forEach(btn => {
-          btn.setAttribute("aria-selected", btn.dataset.tab === state.tab ? "true" : "false");
-        });
-
-        // Lock icon
-        lockBtn.textContent = state.locked ? "🔒" : "🔓";
-        lockBtn.title = state.locked ? "Unlock editing (Ctrl+L)" : "Lock editing (Ctrl+L)";
-
-        // Apply theme
-        setTheme(state.settings.theme);
-
-        // View
-        if (state.tab === "home") renderHome();
-        else if (state.tab === "trending") renderTrending();
-        else renderCategories();
-
-        // Composer
-        messageBox.value = state.message || "";
-        updateSettingsUI();
-        updateNetUI();
-      }
-
-      function renderHome(){
-        const active = getBoard(state.activeBoardId) ?? state.boards[0];
-        if (!active) {
-          view.innerHTML = `<div class="panel"><div class="empty">No boards found.</div></div>`;
-          return;
-        }
-
-        const search = (state.ui.search || "").trim().toLowerCase();
-        const tiles = active.tiles.filter(t => {
-          if (!search) return true;
-          const hay = (t.text + " " + (t.emoji || "")).toLowerCase();
-          return hay.includes(search);
-        });
-
-        const chips = state.boards.map(b => `
-          <button class="chip" type="button"
-            data-action="selectBoard" data-board-id="${escapeHtml(b.id)}"
-            aria-selected="${b.id === active.id ? "true" : "false"}">
-            <span class="chip__icon" aria-hidden="true">${escapeHtml(b.icon || "🗂️")}</span>
-            <strong>${escapeHtml(b.name)}</strong>
-            <small aria-hidden="true">•</small>
-            <small>${b.system ? "Standard" : "Custom"}</small>
-          </button>
-        `).join("");
-
-        const canAddTiles = canEditBoard(active); // only custom boards editable
-        const grid = tiles.length ? tiles.map(t => {
-          const canEdit = canEditTile(active, t);
-          return `
-            <div class="tileWrap" style="--tileAccent:${escapeHtml(t.accent || "")}">
-              ${state.tab === "trending" ? "" : ""}
-              <button class="tile" type="button"
-                data-action="activateTile"
-                data-board-id="${escapeHtml(active.id)}"
-                data-tile-id="${escapeHtml(t.id)}"
-                aria-label="${escapeHtml(t.text)}">
-                <div class="tile__emoji" aria-hidden="true">${escapeHtml(t.emoji || "💬")}</div>
-                <div class="tile__text">${escapeHtml(t.text)}</div>
-                <div class="tile__meta">${t.hasAudio ? "🎵 audio" : "🗣️ tts"}</div>
-              </button>
-              ${canEdit ? `
-                <div class="miniActions" aria-label="Edit tile controls">
-                  <button class="miniBtn" type="button" data-action="editTile"
-                    data-board-id="${escapeHtml(active.id)}" data-tile-id="${escapeHtml(t.id)}"
-                    aria-label="Edit tile">✏️</button>
-                  <button class="miniBtn danger" type="button" data-action="deleteTile"
-                    data-board-id="${escapeHtml(active.id)}" data-tile-id="${escapeHtml(t.id)}"
-                    aria-label="Delete tile">🗑️</button>
-                </div>
-              ` : ``}
-            </div>
-          `;
-        }).join("") : `
-          <div class="empty">
-            No tiles match your search. Tip: press <b>/</b> to focus search and try a different word.
+  items.slice(0, 20).forEach((item, i) => {
+    const pct = Math.round((item.count / maxCount) * 100);
+    const lastTap = new Date(Math.max(...item.taps.map(t => t.ts)));
+    const lastStr = lastTap.toLocaleDateString(undefined, {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    html += `
+      <div class="trending-item">
+        <div class="trending-rank" aria-label="Rank ${i+1}">${i+1}</div>
+        <div style="font-size:1.4rem;line-height:1;flex-shrink:0;" aria-hidden="true">${item.emoji||'💬'}</div>
+        <div class="trending-info">
+          <div class="trending-label">${sanitize(item.label)}</div>
+          <div class="trending-meta">Last: ${sanitize(lastStr)}</div>
+          <div class="trending-bar-wrap" style="width:100%;max-width:120px;margin-top:4px;">
+            <div class="trending-bar"><div class="trending-bar-fill" style="width:${pct}%"></div></div>
           </div>
-        `;
+        </div>
+        <div class="trending-count" aria-label="${item.count} taps">${item.count}</div>
+      </div>`;
+  });
 
-        view.innerHTML = `
-          <div class="panel">
-            <div class="panel__head">
-              <div class="panel__titleRow">
-                <div class="hgroup">
-                  <div class="h1">${escapeHtml(boardLabel(active))}</div>
-                  <div class="sub">
-                    ${active.system
-                      ? "Standard board (cannot be edited)."
-                      : (state.locked ? "Custom board (unlock to edit)." : "Custom board (editing unlocked).")}
-                    Tap any tile to speak/play audio.
-                  </div>
-                </div>
+  html += `</div>`;
 
-                <div class="toolbar">
-                  <div class="field" style="max-width:420px;">
-                    <span class="searchIcon" aria-hidden="true">🔎</span>
-                    <input class="search" id="searchInput" type="search" placeholder="Search tiles…" value="${escapeHtml(state.ui.search || "")}" />
-                    <span class="kbdHint" aria-hidden="true">/</span>
-                  </div>
-                  <button class="btn ${canAddTiles ? "primary" : ""}" type="button" data-action="addTile" ${canAddTiles ? "" : "disabled"} title="${canAddTiles ? "Add tile" : "Unlock + use custom board to add tiles"}">＋ Tile</button>
-                  <button class="btn" type="button" data-action="speakMessage">🔊 Speak message</button>
-                </div>
-              </div>
+  // Daily breakdown
+  const dayKeys = Object.keys(byDay).sort((a,b) => new Date(b) - new Date(a)).slice(0,7);
+  if (dayKeys.length > 0) {
+    html += `<div class="section-title" style="margin-top:24px;">Daily Breakdown</div><div class="trending-list">`;
+    dayKeys.forEach(day => {
+      const dayTiles = Object.values(byDay[day]);
+      dayTiles.sort((a,b) => b.count - a.count);
+      const topStr = dayTiles.slice(0,3).map(t => `${t.emoji||'💬'} ${sanitize(t.label)} ×${t.count}`).join(' · ');
+      const total = dayTiles.reduce((s,t) => s+t.count, 0);
+      html += `<div class="trending-item"><div style="flex:1;"><div class="trending-label">${sanitize(day)}</div><div class="trending-meta">${topStr}</div></div><div class="trending-count">${total}</div></div>`;
+    });
+    html += `</div>`;
+  }
 
-              <div class="chips" role="tablist" aria-label="Boards">
-                ${chips}
-              </div>
+  container.innerHTML = html;
+}
 
-              <div class="hintRow">
-                <div class="pill">Mode: <b>${state.settings.outputMode.toUpperCase()}</b> • Edit: <b>${state.locked ? "Locked" : "Unlocked"}</b></div>
-                <div class="pill">Tip: Tap tiles to build a message, then press <b>Speak</b>.</div>
-              </div>
-            </div>
+// ============================
+// LOCK / UNLOCK
+// ============================
 
-            <div class="gridWrap">
-              <div class="grid" id="tileGrid" aria-label="Tile grid">
-                ${grid}
-              </div>
-            </div>
-          </div>
-        `;
-      }
+function applyLockState() {
+  const locked = STATE.isLocked;
+  // Show/hide tabs
+  document.getElementById('tab-trending').classList.toggle('hidden', locked);
+  document.getElementById('tab-categories').classList.toggle('hidden', locked);
+  document.getElementById('tab-settings').classList.toggle('hidden', locked);
+  document.getElementById('board-mgmt-bar').classList.toggle('hidden', locked);
+  document.getElementById('trending-reset-wrap').classList.toggle('hidden', locked);
 
-      function renderTrending(){
-        // Build a map tileId -> tile info (across all boards)
-        const tileIndex = new Map();
-        for (const b of state.boards) {
-          for (const t of b.tiles) tileIndex.set(t.id, { boardId: b.id, tile: t, board: b });
-        }
+  // Lock indicator
+  const li = document.getElementById('lock-indicator');
+  if (locked) {
+    li.textContent = '🔒 Locked – Tap to Unlock';
+    li.classList.remove('unlocked');
+    li.setAttribute('aria-label', 'App is locked. Tap to unlock.');
+    // If on a tab that's now hidden, switch to home
+    if (['trending','categories'].includes(STATE.currentTab)) {
+      switchTab('home');
+    }
+  } else {
+    li.textContent = '🔓 Unlocked – Tap to Lock';
+    li.classList.add('unlocked');
+    li.setAttribute('aria-label', 'App is unlocked. Tap to lock.');
+  }
 
-        const items = Object.entries(state.trends || {})
-          .map(([tileId, count]) => {
-            const hit = tileIndex.get(tileId);
-            if (!hit) return null;
-            return { tileId, count, ...hit };
-          })
-          .filter(Boolean)
-          .sort((a,b) => b.count - a.count)
-          .slice(0, 30);
+  // Re-render tiles to show/hide edit buttons
+  renderCurrentBoard();
+}
 
-        const grid = items.length ? items.map(item => {
-          const t = item.tile;
-          return `
-            <div class="tileWrap" style="--tileAccent:${escapeHtml(t.accent || "")}">
-              <span class="badge" aria-label="Count ${item.count}">#${item.count}</span>
-              <button class="tile" type="button"
-                data-action="activateTile"
-                data-board-id="${escapeHtml(item.boardId)}"
-                data-tile-id="${escapeHtml(item.tileId)}"
-                aria-label="${escapeHtml(t.text)}">
-                <div class="tile__emoji" aria-hidden="true">${escapeHtml(t.emoji || "💬")}</div>
-                <div class="tile__text">${escapeHtml(t.text)}</div>
-                <div class="tile__meta">${escapeHtml(item.board.name)} • ${t.hasAudio ? "🎵 audio" : "🗣️ tts"}</div>
-              </button>
-            </div>
-          `;
-        }).join("") : `
-          <div class="empty">
-            No trending tiles yet. Use the Home board and come back—your most-used tiles will appear here.
-          </div>
-        `;
+// ============================
+// PIN MODAL
+// ============================
 
-        view.innerHTML = `
-          <div class="panel">
-            <div class="panel__head">
-              <div class="panel__titleRow">
-                <div class="hgroup">
-                  <div class="h1">📈 Trending</div>
-                  <div class="sub">Your most-used tiles across all boards. Resets when you restore defaults.</div>
-                </div>
-                <div class="toolbar">
-                  <button class="btn" type="button" data-action="clearTrending">📉 Reset trending</button>
-                  <button class="btn" type="button" data-action="speakMessage">🔊 Speak message</button>
-                </div>
-              </div>
-              <div class="hintRow">
-                <div class="pill">Tracking: <b>${items.length}</b> tiles</div>
-                <div class="pill">Tip: Even when locked, trending keeps learning your taps.</div>
-              </div>
-            </div>
-            <div class="gridWrap">
-              <div class="grid" id="trendingGrid" aria-label="Trending tile grid">
-                ${grid}
-              </div>
-            </div>
-          </div>
-        `;
-      }
+let pinBuffer = '';
 
-      function renderCategories(){
-        const rows = state.boards.map((b, idx) => {
-          const editable = canEditBoard(b);
-          const meta = `${b.tiles.length} tiles • ${b.system ? "Standard" : "Custom"}`;
-          return `
-            <div class="row" data-board-id="${escapeHtml(b.id)}">
-              <div class="row__left">
-                <div class="row__icon" aria-hidden="true">${escapeHtml(b.icon || "🗂️")}</div>
-                <div class="row__txt">
-                  <div class="row__name">${escapeHtml(b.name)}</div>
-                  <div class="row__meta">${escapeHtml(meta)}</div>
-                </div>
-              </div>
+function openPinModal() {
+  pinBuffer = '';
+  updatePinDisplay();
+  document.getElementById('pin-error').classList.add('hidden');
+  openModal('pin-modal');
+}
 
-              <div class="row__actions">
-                <button class="btn" type="button" data-action="openBoard" data-board-id="${escapeHtml(b.id)}">Open</button>
-                <button class="btn ${editable ? "primary" : ""}" type="button" data-action="editBoard"
-                  data-board-id="${escapeHtml(b.id)}" ${editable ? "" : "disabled"}>✏️ Edit</button>
-                <button class="btn danger" type="button" data-action="deleteBoard"
-                  data-board-id="${escapeHtml(b.id)}" ${editable ? "" : "disabled"}>🗑️ Delete</button>
-                <button class="btn ghost" type="button" data-action="moveBoardUp"
-                  data-board-id="${escapeHtml(b.id)}" ${editable && idx > 0 ? "" : "disabled"} title="Move up">⬆️</button>
-                <button class="btn ghost" type="button" data-action="moveBoardDown"
-                  data-board-id="${escapeHtml(b.id)}" ${editable && idx < state.boards.length - 1 ? "" : "disabled"} title="Move down">⬇️</button>
-              </div>
-            </div>
-          `;
-        }).join("");
+function updatePinDisplay() {
+  const d = document.getElementById('pin-display');
+  const stars = '●'.repeat(pinBuffer.length) + '─'.repeat(6 - pinBuffer.length);
+  d.textContent = stars;
+  d.setAttribute('aria-label', `${pinBuffer.length} digits entered`);
+}
 
-        view.innerHTML = `
-          <div class="panel">
-            <div class="panel__head">
-              <div class="panel__titleRow">
-                <div class="hgroup">
-                  <div class="h1">🗂️ Categories</div>
-                  <div class="sub">
-                    Manage boards here. Custom boards can be added/edited/deleted when unlocked (code <b>123456</b>).
-                  </div>
-                </div>
-                <div class="toolbar">
-                  <button class="btn primary" type="button" data-action="addBoard" ${isUnlocked() ? "" : "disabled"} title="${isUnlocked() ? "Add a custom board" : "Unlock to add boards"}">＋ Add board</button>
-                  <button class="btn" type="button" data-action="openSettings">⚙️ Settings</button>
-                </div>
-              </div>
-              <div class="hintRow">
-                <div class="pill">Edit mode: <b>${state.locked ? "Locked" : "Unlocked"}</b></div>
-                <div class="pill">Tip: Standard boards cannot be changed.</div>
-              </div>
-            </div>
+document.querySelectorAll('.pin-key').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const k = btn.dataset.k;
+    if (k === 'del') {
+      pinBuffer = pinBuffer.slice(0, -1);
+      updatePinDisplay();
+    } else if (k === 'ok') {
+      checkPin();
+    } else if (pinBuffer.length < 6) {
+      pinBuffer += k;
+      updatePinDisplay();
+      if (pinBuffer.length === 6) checkPin();
+    }
+  });
+});
 
-            <div class="list" aria-label="Board list">
-              ${rows}
-            </div>
-          </div>
-        `;
-      }
+function checkPin() {
+  if (pinBuffer === CORRECT_PIN) {
+    STATE.isLocked = false;
+    closeModal('pin-modal');
+    applyLockState();
+    toast('🔓 Unlocked successfully!');
+  } else {
+    document.getElementById('pin-error').classList.remove('hidden');
+    vibrate(100);
+    pinBuffer = '';
+    updatePinDisplay();
+  }
+}
 
-      // ====== Settings UI sync ======
-      function updateSettingsUI(){
-        // Output mode buttons
-        document.querySelectorAll('[data-setting="outputMode"]').forEach(btn => {
-          btn.setAttribute("aria-pressed", btn.dataset.value === state.settings.outputMode ? "true" : "false");
-        });
-        document.querySelectorAll('[data-setting="theme"]').forEach(btn => {
-          btn.setAttribute("aria-pressed", btn.dataset.value === state.settings.theme ? "true" : "false");
-        });
+document.getElementById('pin-cancel').addEventListener('click', () => closeModal('pin-modal'));
 
-        volRange.value = String(state.settings.volume ?? 1);
-        volVal.textContent = Math.round((state.settings.volume ?? 1) * 100) + "%";
+// Lock indicator click
+document.getElementById('lock-indicator').addEventListener('click', () => {
+  if (STATE.isLocked) {
+    openPinModal();
+  } else {
+    STATE.isLocked = true;
+    applyLockState();
+    toast('🔒 Locked');
+  }
+});
 
-        rateRange.value = String(state.settings.rate ?? 1);
-        rateVal.textContent = (state.settings.rate ?? 1).toFixed(2) + "×";
+// ============================
+// NAVIGATION / TABS
+// ============================
 
-        fallbackSwitch.setAttribute("aria-checked", state.settings.audioFallbackTTS ? "true" : "false");
+function switchTab(tab) {
+  STATE.currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    const selected = btn.dataset.tab === tab;
+    btn.setAttribute('aria-selected', selected ? 'true' : 'false');
+  });
+  document.querySelectorAll('[id^="panel-"]').forEach(p => p.classList.add('hidden'));
+  const panel = document.getElementById(`panel-${tab}`);
+  if (panel) panel.classList.remove('hidden');
 
-        const canVibrate = ("vibrate" in navigator);
-        hapticSwitch.setAttribute("aria-checked", (state.settings.haptics && canVibrate) ? "true" : "false");
-        hapticSwitch.style.opacity = canVibrate ? "1" : ".5";
+  if (tab === 'trending') renderTrending('day');
+  if (tab === 'categories') renderCategories();
+}
 
-        hapticStrength.value = state.settings.hapticStrength || "medium";
-        hapVal.textContent = (state.settings.hapticStrength || "medium").replace(/^\w/, c => c.toUpperCase());
-      }
+document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.id === 'tab-settings') {
+      openSettings();
+      return;
+    }
+    switchTab(btn.dataset.tab);
+  });
+});
 
-      // ====== Dialog helpers ======
-      function openDialog(dlg){
-        if (!dlg.open) dlg.showModal();
-      }
-      function closeDialog(dlg){
-        if (dlg.open) dlg.close();
-      }
+// ============================
+// CATEGORIES
+// ============================
 
-      // ====== Lock / Unlock ======
-      function openLock(){
-        enteredPin = "";
-        syncPinDots();
+function renderCategories() {
+  const grid = document.getElementById('categories-grid');
+  grid.innerHTML = '';
+  getAllBoards().forEach(board => {
+    const card = document.createElement('div');
+    card.className = 'category-card';
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('aria-label', `${board.name} board, ${board.tiles ? board.tiles.length : 0} tiles`);
+    card.innerHTML = `<div class="category-card-icon">${board.icon || '📋'}</div><div class="category-card-name">${sanitize(board.name)}</div><div class="category-card-count">${board.tiles ? board.tiles.length : 0} tiles${board.isStandard ? ' · Standard' : ''}</div>`;
+    card.addEventListener('click', () => {
+      switchTab('home');
+      selectBoard(board.id);
+    });
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); }
+    });
+    grid.appendChild(card);
+  });
+}
 
-        if (state.locked) {
-          lockTitle.textContent = "🔒 Board locked";
-          lockSub.textContent = "Enter the 6-digit code to unlock editing.";
-        } else {
-          lockTitle.textContent = "🔓 Board unlocked";
-          lockSub.textContent = "Press Lock to disable editing (no code required).";
-        }
+// ============================
+// BOARD NAVIGATION
+// ============================
 
-        openDialog(lockDlg);
-      }
+function renderBoardNav() {
+  const nav = document.getElementById('board-nav');
+  nav.innerHTML = '';
+  // Show/hide add tile btn based on current board
+  const mgmtBar = document.getElementById('board-mgmt-bar');
+  const currentBoard = getBoardById(STATE.currentBoardId);
+  const addTileBtn = document.getElementById('btn-add-tile');
+  if (addTileBtn) addTileBtn.style.display = (currentBoard && !currentBoard.isStandard) ? '' : 'none';
 
-      function syncPinDots(){
-        const dots = [...pinDots.querySelectorAll(".dotPin")];
-        dots.forEach((d, i) => d.classList.toggle("filled", i < enteredPin.length));
-      }
+  getAllBoards().forEach(board => {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:inline-flex;align-items:center;gap:2px;flex-shrink:0;';
 
-      function handlePinKey(k){
-        if (!state.locked) {
-          // if already unlocked, lock immediately for simplicity
-          state.locked = true;
-          scheduleSave();
-          toastMsg("Locked", "Editing is now locked. You can still use tiles to speak.", "🔒");
-          closeDialog(lockDlg);
-          render();
-          return;
-        }
+    const chip = document.createElement('button');
+    chip.className = 'board-chip';
+    chip.setAttribute('role', 'option');
+    chip.setAttribute('aria-selected', board.id === STATE.currentBoardId ? 'true' : 'false');
+    chip.setAttribute('aria-label', board.name + ' board' + (board.isStandard ? ' (standard)' : ''));
+    chip.textContent = (board.icon || '📋') + ' ' + board.name;
+    chip.addEventListener('click', () => selectBoard(board.id));
+    wrap.appendChild(chip);
 
-        if (k === "clear") enteredPin = "";
-        else if (k === "back") enteredPin = enteredPin.slice(0, -1);
-        else if (/^\d$/.test(k) && enteredPin.length < 6) enteredPin += k;
-
-        syncPinDots();
-
-        if (enteredPin.length === 6) {
-          if (enteredPin === LOCK_CODE) {
-            state.locked = false;
-            scheduleSave();
-            toastMsg("Unlocked", "Editing is now enabled for custom boards.", "🔓");
-            closeDialog(lockDlg);
-            render();
-          } else {
-            vibrateTap();
-            toastMsg("Wrong code", "Try again.", "⛔");
-            enteredPin = "";
-            syncPinDots();
-          }
-        }
-      }
-
-      // ====== Board / Tile editing ======
-      function addBoard(){
-        if (!isUnlocked()) return;
-        const b = {
-          id: uid("board"),
-          system: false,
-          name: "New board",
-          icon: "🗂️",
-          tiles: [
-            { id: uid("tile"), system: false, text: "New tile", emoji: "💬", accent: "#3b82f6", hasAudio: false }
-          ]
-        };
-        state.boards.push(b);
-        state.activeBoardId = b.id;
-        scheduleSave();
-        toastMsg("Board added", "A new custom board was created.", "➕");
-        render();
-      }
-
-      function openBoardEditor(boardId){
-        const b = getBoard(boardId);
-        if (!b) return;
-
-        editingBoardId = b.id;
-        boardDlgTitle.textContent = `${b.icon || "🗂️"} Edit board`;
-        boardName.value = b.name || "";
-        boardIcon.value = b.icon || "";
-
-        const editable = canEditBoard(b);
-        boardName.disabled = !editable;
-        boardIcon.disabled = !editable;
-        boardSaveBtn.disabled = !editable;
-        boardDeleteBtn.disabled = !editable;
-
-        openDialog(boardDlg);
-      }
-
-      function saveBoardEdits(){
-        const b = getBoard(editingBoardId);
-        if (!b || !canEditBoard(b)) return;
-        b.name = (boardName.value || "").trim().slice(0, 40) || "Custom board";
-        b.icon = (boardIcon.value || "").trim().slice(0, 4) || "🗂️";
-        scheduleSave();
-        toastMsg("Saved", "Board updated.", "💾");
-        render();
-      }
-
-      async function deleteBoard(boardId){
-        const b = getBoard(boardId);
-        if (!b || !canEditBoard(b)) return;
-
-        const ok = confirm(`Delete board "${b.name}"?\n\nThis cannot be undone.`);
+    if (!STATE.isLocked && !board.isStandard) {
+      const del = document.createElement('button');
+      del.style.cssText = 'width:20px;height:20px;border-radius:50%;border:none;background:var(--danger);color:#fff;font-size:0.55rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+      del.setAttribute('aria-label', 'Delete board ' + board.name);
+      del.textContent = '✕';
+      del.addEventListener('click', async e => {
+        e.stopPropagation();
+        const ok = await showConfirm('Delete board "' + board.name + '" and all its tiles? This cannot be undone.');
         if (!ok) return;
-
-        // remove tile audio blobs for tiles in this board
-        for (const t of b.tiles) {
-          if (t.hasAudio) await idb.del("tile:" + t.id).catch(()=>{});
-        }
-
-        state.boards = state.boards.filter(x => x.id !== boardId);
-        if (state.activeBoardId === boardId) state.activeBoardId = state.boards[0]?.id || "home";
-        scheduleSave();
-        toastMsg("Deleted", "Board removed.", "🗑️");
-        closeDialog(boardDlg);
-        render();
-      }
-
-      function moveBoard(boardId, dir){
-        const b = getBoard(boardId);
-        if (!b || !canEditBoard(b)) return;
-        const i = state.boards.findIndex(x => x.id === boardId);
-        const j = i + dir;
-        if (i < 0 || j < 0 || j >= state.boards.length) return;
-        const tmp = state.boards[i];
-        state.boards[i] = state.boards[j];
-        state.boards[j] = tmp;
-        scheduleSave();
-        render();
-      }
-
-      function addTileToActive(){
-        const b = getBoard(state.activeBoardId);
-        if (!b || !canEditBoard(b)) return;
-        const t = { id: uid("tile"), system: false, text: "New tile", emoji: "💬", accent: "#3b82f6", hasAudio: false };
-        b.tiles.push(t);
-        scheduleSave();
-        toastMsg("Tile added", "Edit it to customize text, emoji, and audio.", "➕");
-        render();
-        openTileEditor(b.id, t.id);
-      }
-
-      async function openTileEditor(boardId, tileId){
-        const b = getBoard(boardId);
-        const t = getTile(boardId, tileId);
-        if (!b || !t) return;
-
-        editingTile = { boardId, tileId };
-        tileDlgTitle.textContent = `${t.emoji || "💬"} Edit tile`;
-        tileText.value = t.text || "";
-        tileEmoji.value = t.emoji || "";
-        tileAccent.value = t.accent || "";
-        tileAudio.value = "";
-
-        const editable = canEditTile(b, t);
-        tileText.disabled = !editable;
-        tileEmoji.disabled = !editable;
-        tileAccent.disabled = !editable;
-        tileAudio.disabled = !editable;
-        tileSaveBtn.disabled = !editable;
-        tileDeleteBtn.disabled = !editable;
-
-        // audio status
-        if (t.hasAudio) tileAudioStatus.textContent = "Audio clip stored for this tile.";
-        else tileAudioStatus.textContent = "No audio clip stored.";
-
-        openDialog(tileDlg);
-      }
-
-      async function saveTileEdits(){
-        const { boardId, tileId } = editingTile;
-        const b = getBoard(boardId);
-        const t = getTile(boardId, tileId);
-        if (!b || !t || !canEditTile(b, t)) return;
-
-        t.text = (tileText.value || "").trim().slice(0, 60) || "Tile";
-        t.emoji = (tileEmoji.value || "").trim().slice(0, 4) || "💬";
-        t.accent = (tileAccent.value || "").trim();
-
-        // optional audio upload
-        if (tileAudio.files && tileAudio.files[0]) {
-          const file = tileAudio.files[0];
-          const blob = new Blob([await file.arrayBuffer()], { type: file.type || "audio/*" });
-          await idb.set("tile:" + t.id, blob);
-          t.hasAudio = true;
-          tileAudioStatus.textContent = "Audio clip stored for this tile.";
-        }
-
-        scheduleSave();
-        toastMsg("Saved", "Tile updated.", "💾");
-        render();
-      }
-
-      async function deleteTile(boardId, tileId){
-        const b = getBoard(boardId);
-        const t = getTile(boardId, tileId);
-        if (!b || !t || !canEditTile(b, t)) return;
-
-        const ok = confirm(`Delete tile "${t.text}"?\n\nThis cannot be undone.`);
-        if (!ok) return;
-
-        if (t.hasAudio) await idb.del("tile:" + t.id).catch(()=>{});
-        delete state.trends[t.id];
-
-        b.tiles = b.tiles.filter(x => x.id !== tileId);
-        scheduleSave();
-        toastMsg("Deleted", "Tile removed.", "🗑️");
-        closeDialog(tileDlg);
-        render();
-      }
-
-      async function testTile(){
-        const { boardId, tileId } = editingTile;
-        await activateTile(boardId, tileId, { appendToMessage: false });
-      }
-
-      // ====== Message actions ======
-      function speakMessage(){
-        const msg = (messageBox.value || "").trim();
-        state.message = messageBox.value || "";
-        scheduleSave();
-        if (!msg) return toastMsg("Nothing to speak", "Tap tiles or type a message first.", "ℹ️");
-        vibrateTap();
-        speakText(msg);
-      }
-
-      function clearMessage(){
-        stopSpeech();
-        state.message = "";
-        messageBox.value = "";
-        scheduleSave();
-        toastMsg("Cleared", "Message cleared.", "🧹");
-      }
-
-      function backspaceWord(){
-        const txt = (messageBox.value || "").trim();
-        if (!txt) return;
-        const parts = txt.split(/\s+/);
-        parts.pop();
-        const next = parts.join(" ");
-        state.message = next;
-        messageBox.value = next;
-        scheduleSave();
-        vibrateTap();
-      }
-
-      // ====== Trending ======
-      function clearTrending(){
-        state.trends = {};
-        scheduleSave();
-        toastMsg("Trending reset", "Your trending tiles were cleared.", "📉");
-        render();
-      }
-
-      // ====== Import/Export/Reset ======
-      async function exportData(){
-        const payload = deepClone(state);
-        // note: audio blobs not included in export
-        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "talkboard-export.json";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-        toastMsg("Exported", "Downloaded JSON (audio clips not included).", "⬇️");
-      }
-
-      async function importData(file){
-        try{
-          const txt = await file.text();
-          const data = JSON.parse(txt);
-          if (!data || typeof data !== "object" || !Array.isArray(data.boards)) {
-            toastMsg("Import failed", "Invalid file format.", "⚠️");
-            return;
-          }
-          // Keep version if present
-          state = data;
-          // basic guards
-          state.trends = state.trends || {};
-          state.ui = state.ui || { search: "" };
-          state.settings = state.settings || DEFAULT_STATE().settings;
-          scheduleSave();
-          toastMsg("Imported", "Data imported successfully.", "⬆️");
-          render();
-        } catch {
-          toastMsg("Import failed", "Could not read that file.", "⚠️");
-        }
-      }
-
-      async function restoreDefaults(){
-        const ok = confirm(
-          "Restore defaults?\n\nThis resets:\n• Boards & tiles (Home)\n• Trending\n• Settings\n• Message\n• Stored audio clips\n\nThis cannot be undone."
-        );
-        if (!ok) return;
-
-        stopSpeech();
-        await idb.clear().catch(()=>{});
-        state = DEFAULT_STATE();
-        scheduleSave();
-        toastMsg("Restored", "Defaults restored. Trending and message reset.", "♻️");
-        render();
-      }
-
-      // ====== Voices ======
-      function loadVoices(){
-        if (!("speechSynthesis" in window)) {
-          voiceSelect.innerHTML = `<option value="">TTS not supported</option>`;
-          voiceCount.textContent = "0 voices";
-          return;
-        }
-
-        const refresh = () => {
-          voices = speechSynthesis.getVoices() || [];
-          voiceCount.textContent = `${voices.length} voices`;
-          voiceSelect.innerHTML = [
-            `<option value="">System default</option>`,
-            ...voices.map(v => {
-              const label = `${v.name} — ${v.lang}${v.default ? " (default)" : ""}`;
-              return `<option value="${escapeHtml(v.voiceURI)}">${escapeHtml(label)}</option>`;
-            })
-          ].join("");
-
-          voiceSelect.value = state.settings.voiceURI || "";
-        };
-
-        refresh();
-        speechSynthesis.addEventListener("voiceschanged", refresh);
-      }
-
-      // ====== PWA: manifest + service worker + install ======
-      function setupManifest(){
-        const svg = encodeURIComponent(`
-          <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512">
-            <defs>
-              <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stop-color="#3b82f6"/>
-                <stop offset="1" stop-color="#14b8a6"/>
-              </linearGradient>
-            </defs>
-            <rect width="512" height="512" rx="120" fill="url(#g)"/>
-            <text x="50%" y="52%" text-anchor="middle" dominant-baseline="middle"
-              font-size="220" font-family="system-ui, -apple-system, Segoe UI, Roboto">🗣️</text>
-          </svg>
-        `.trim());
-        const icon = `data:image/svg+xml;charset=utf-8,${svg}`;
-
-        const manifest = {
-          name: "Talkboard",
-          short_name: "Talkboard",
-          start_url: "./",
-          scope: "./",
-          display: "standalone",
-          background_color: state.settings.theme === "dark" ? "#0b0b0c" : "#f6f6f7",
-          theme_color: state.settings.theme === "dark" ? "#111111" : "#111111",
-          icons: [
-            { src: icon, sizes: "192x192", type: "image/svg+xml" },
-            { src: icon, sizes: "512x512", type: "image/svg+xml" }
-          ]
-        };
-
-        const blob = new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" });
-        const url = URL.createObjectURL(blob);
-
-        let link = document.querySelector('link[rel="manifest"]');
-        if (!link) {
-          link = document.createElement("link");
-          link.rel = "manifest";
-          document.head.appendChild(link);
-        }
-        link.href = url;
-      }
-
-      function buildServiceWorkerCode(){
-        // Cache-first for same-origin requests; offline fallback to root
-        return `
-          const CACHE = "talkboard-cache-v1";
-          self.addEventListener("install", (e) => {
-            self.skipWaiting();
-            e.waitUntil((async () => {
-              const c = await caches.open(CACHE);
-              try { await c.addAll(["./"]); } catch {}
-            })());
-          });
-          self.addEventListener("activate", (e) => {
-            e.waitUntil((async () => {
-              const keys = await caches.keys();
-              await Promise.all(keys.map(k => k === CACHE ? null : caches.delete(k)));
-              await self.clients.claim();
-            })());
-          });
-          self.addEventListener("fetch", (e) => {
-            const req = e.request;
-            if (req.method !== "GET") return;
-            const url = new URL(req.url);
-
-            // Only handle same-origin navigations/assets
-            if (url.origin !== self.location.origin) return;
-
-            e.respondWith((async () => {
-              const cache = await caches.open(CACHE);
-              const cached = await cache.match(req, { ignoreSearch: true });
-              if (cached) return cached;
-
-              try {
-                const res = await fetch(req);
-                if (res && res.ok) cache.put(req, res.clone());
-                return res;
-              } catch {
-                // Offline fallback
-                const fallback = await cache.match("./", { ignoreSearch: true });
-                if (fallback) return fallback;
-                return new Response("Offline", { status: 503, headers: { "Content-Type": "text/plain" } });
-              }
-            })());
-          });
-        `.trim();
-      }
-
-      async function setupServiceWorker(){
-        if (!("serviceWorker" in navigator)) {
-          swStatus.textContent = "Service Worker not supported in this browser.";
-          swPill.textContent = "Not supported";
-          return;
-        }
-
-        // Try blob SW registration (may be blocked in some browsers).
-        // If blocked, user can download sw.js and serve the app from a local server.
-        const swCode = buildServiceWorkerCode();
-        try{
-          const blob = new Blob([swCode], { type: "text/javascript" });
-          const url = URL.createObjectURL(blob);
-          const reg = await navigator.serviceWorker.register(url, { scope: "./" });
-          swStatus.textContent = "Offline cache ready (Service Worker active).";
-          swPill.textContent = "Enabled";
-          URL.revokeObjectURL(url);
-          return reg;
-        } catch (e) {
-          // Fallback: try a conventional sw.js (if the user provides it)
-          try{
-            const reg2 = await navigator.serviceWorker.register("./sw.js", { scope: "./" });
-            swStatus.textContent = "Offline cache ready (sw.js).";
-            swPill.textContent = "Enabled";
-            return reg2;
-          } catch {
-            swStatus.textContent = "Offline cache not active (needs HTTPS/localhost + service worker).";
-            swPill.textContent = "Limited";
-          }
-        }
-      }
-
-      function setupInstallPrompt(){
-        window.addEventListener("beforeinstallprompt", (e) => {
-          e.preventDefault();
-          deferredInstallPrompt = e;
-          installBtn.disabled = false;
-        });
-
-        installBtn.addEventListener("click", async () => {
-          if (!deferredInstallPrompt) return;
-          deferredInstallPrompt.prompt();
-          const choice = await deferredInstallPrompt.userChoice;
-          deferredInstallPrompt = null;
-          installBtn.disabled = true;
-          toastMsg("Install", choice?.outcome === "accepted" ? "App installed." : "Install dismissed.", "📲");
-        });
-      }
-
-      function downloadSwFile(){
-        const code = buildServiceWorkerCode();
-        const blob = new Blob([code], { type: "text/javascript" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "sw.js";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-        toastMsg("Downloaded", "Place sw.js next to this HTML and serve via localhost/HTTPS.", "⬇️");
-      }
-
-      // ====== Events ======
-      document.addEventListener("click", async (e) => {
-        const target = e.target.closest("[data-action]");
-        if (!target) return;
-
-        const action = target.dataset.action;
-
-        if (action === "activateTile") {
-          const boardId = target.dataset.boardId;
-          const tileId = target.dataset.tileId;
-          await activateTile(boardId, tileId);
-          return;
-        }
-
-        if (action === "selectBoard") {
-          setActiveBoard(target.dataset.boardId);
-          return;
-        }
-
-        if (action === "addTile") {
-          addTileToActive();
-          return;
-        }
-
-        if (action === "editTile") {
-          openTileEditor(target.dataset.boardId, target.dataset.tileId);
-          return;
-        }
-
-        if (action === "deleteTile") {
-          await deleteTile(target.dataset.boardId, target.dataset.tileId);
-          return;
-        }
-
-        if (action === "speakMessage") {
-          speakMessage();
-          return;
-        }
-
-        if (action === "clearTrending") {
-          clearTrending();
-          return;
-        }
-
-        if (action === "openBoard") {
-          const boardId = target.dataset.boardId;
-          setTab("home");
-          setActiveBoard(boardId);
-          return;
-        }
-
-        if (action === "addBoard") {
-          addBoard();
-          return;
-        }
-
-        if (action === "editBoard") {
-          openBoardEditor(target.dataset.boardId);
-          return;
-        }
-
-        if (action === "deleteBoard") {
-          await deleteBoard(target.dataset.boardId);
-          return;
-        }
-
-        if (action === "moveBoardUp") {
-          moveBoard(target.dataset.boardId, -1);
-          return;
-        }
-        if (action === "moveBoardDown") {
-          moveBoard(target.dataset.boardId, +1);
-          return;
-        }
-
-        if (action === "openSettings") {
-          openDialog(settingsDlg);
-          return;
-        }
-
-        if (action === "closeDialog") {
-          const id = target.dataset.target;
-          const dlg = document.getElementById(id);
-          if (dlg) closeDialog(dlg);
-          return;
-        }
+        STATE.customBoards = STATE.customBoards.filter(b => b.id !== board.id);
+        if (STATE.currentBoardId === board.id) STATE.currentBoardId = 'home';
+        saveState();
+        renderBoardNav();
+        renderCurrentBoard();
+        toast('Board "' + board.name + '" deleted.');
       });
+      wrap.appendChild(del);
+    }
 
-      // Tabs
-      document.querySelectorAll(".tab").forEach(btn => {
-        btn.addEventListener("click", () => setTab(btn.dataset.tab));
-      });
+    nav.appendChild(wrap);
+  });
+}
 
-      // Header buttons
-      settingsBtn.addEventListener("click", () => openDialog(settingsDlg));
-      lockBtn.addEventListener("click", () => openLock());
+function selectBoard(id) {
+  STATE.currentBoardId = id;
+  renderBoardNav();
+  renderCurrentBoard();
+}
 
-      // Search input (Home)
-      document.addEventListener("input", (e) => {
-        if (e.target && e.target.id === "searchInput") {
-          state.ui.search = e.target.value || "";
-          scheduleSave();
-          // Render only the grid view quickly
-          if (state.tab === "home") renderHome();
+// ============================
+// TILE RENDERING
+// ============================
+
+function renderCurrentBoard() {
+  const board = getBoardById(STATE.currentBoardId);
+  const container = document.getElementById('tile-container');
+  container.innerHTML = '';
+  if (!board) return;
+
+  const tiles = board.tiles || [];
+
+  tiles.forEach(tile => {
+    const btn = createTileElement(tile, board);
+    container.appendChild(btn);
+  });
+
+  // Add tile button (unlocked, custom boards only)
+  if (!STATE.isLocked && !board.isStandard) {
+    const addBtn = document.createElement('button');
+    addBtn.className = 'tile tile-add';
+    addBtn.setAttribute('aria-label', 'Add new tile');
+    addBtn.innerHTML = `<span class="tile-emoji" aria-hidden="true">➕</span><span class="tile-label">Add Tile</span>`;
+    addBtn.addEventListener('click', () => openTileModal(null, board));
+    container.appendChild(addBtn);
+  }
+}
+
+function createTileElement(tile, board) {
+  const btn = document.createElement('button');
+  btn.className = 'tile';
+  btn.dataset.color = tile.color || '';
+  btn.setAttribute('aria-label', tile.label);
+  btn.setAttribute('data-tile-id', tile.id);
+  btn.setAttribute('tabindex', '0');
+
+  btn.innerHTML = `<span class="tile-emoji" aria-hidden="true">${tile.emoji || '💬'}</span><span class="tile-label">${sanitize(tile.label)}</span>`;
+
+  // Edit button for unlocked, non-standard boards
+  if (!STATE.isLocked && !board.isStandard) {
+    const editBtn = document.createElement('button');
+    editBtn.className = 'tile-edit-btn';
+    editBtn.setAttribute('aria-label', `Edit ${tile.label}`);
+    editBtn.textContent = '✏️';
+    editBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      openTileModal(tile, board);
+    });
+    btn.appendChild(editBtn);
+  }
+
+  btn.addEventListener('click', () => onTileTap(tile, btn));
+
+  return btn;
+}
+
+function onTileTap(tile, btnEl) {
+  vibrate();
+  recordTap(tile);
+
+  // Add to message
+  STATE.message.push({ label: tile.label, emoji: tile.emoji });
+  updateMessageBar();
+
+  // Visual feedback
+  btnEl.classList.add('speaking');
+  setTimeout(() => btnEl.classList.remove('speaking'), 600);
+
+  // TTS
+  if (STATE.outputMode === 'tts') {
+    speakText(tile.label);
+  } else if (STATE.outputMode === 'audio' && tile.audioData) {
+    try {
+      const audio = new Audio(tile.audioData);
+      audio.volume = STATE.ttsVolume;
+      audio.play();
+    } catch(e) { speakText(tile.label); } // fallback
+  } else {
+    speakText(tile.label);
+  }
+}
+
+// ============================
+// MESSAGE BAR
+// ============================
+
+function updateMessageBar() {
+  const el = document.getElementById('message-text');
+  el.innerHTML = '';
+  STATE.message.forEach(w => {
+    const span = document.createElement('span');
+    span.className = 'msg-word';
+    span.innerHTML = `${w.emoji ? w.emoji + ' ' : ''}${sanitize(w.label)}`;
+    el.appendChild(span);
+  });
+}
+
+document.getElementById('btn-speak').addEventListener('click', () => {
+  const text = STATE.message.map(w => w.label).join(' ');
+  if (!text) { toast('Nothing to speak yet!'); return; }
+  speakText(text);
+  vibrate(50);
+});
+
+document.getElementById('btn-undo').addEventListener('click', () => {
+  STATE.message.pop();
+  updateMessageBar();
+});
+
+document.getElementById('btn-clear').addEventListener('click', () => {
+  STATE.message = [];
+  updateMessageBar();
+  speechSynthesis.cancel();
+});
+
+// ============================
+// SETTINGS
+// ============================
+
+function openSettings() {
+  if (STATE.isLocked) return;
+  // Sync UI
+  document.getElementById('setting-output-mode').value = STATE.outputMode;
+  document.getElementById('setting-theme').value = STATE.theme;
+  document.getElementById('setting-volume').value = STATE.ttsVolume;
+  document.getElementById('setting-rate').value = STATE.ttsRate;
+  document.getElementById('setting-haptic').checked = STATE.haptic;
+  populateVoiceSelect();
+
+  const panel = document.getElementById('settings-panel');
+  panel.classList.add('open');
+  panel.removeAttribute('aria-hidden');
+  document.getElementById('settings-close').focus();
+}
+
+function closeSettings() {
+  const panel = document.getElementById('settings-panel');
+  panel.classList.remove('open');
+  panel.setAttribute('aria-hidden', 'true');
+}
+
+document.getElementById('settings-close').addEventListener('click', closeSettings);
+document.getElementById('settings-panel').addEventListener('click', e => {
+  if (e.target === document.getElementById('settings-panel')) closeSettings();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('settings-panel').classList.contains('open')) {
+    closeSettings();
+  }
+});
+
+document.getElementById('tab-settings').addEventListener('click', () => {
+  if (!STATE.isLocked) openSettings();
+});
+
+// Settings controls
+document.getElementById('setting-output-mode').addEventListener('change', e => {
+  STATE.outputMode = e.target.value;
+  saveState();
+});
+
+document.getElementById('setting-theme').addEventListener('change', e => {
+  applyTheme(e.target.value);
+  saveState();
+});
+
+document.getElementById('setting-volume').addEventListener('input', e => {
+  STATE.ttsVolume = parseFloat(e.target.value);
+  saveState();
+});
+
+document.getElementById('setting-rate').addEventListener('input', e => {
+  STATE.ttsRate = parseFloat(e.target.value);
+  saveState();
+});
+
+document.getElementById('setting-voice').addEventListener('change', e => {
+  STATE.ttsVoiceURI = e.target.value;
+  saveState();
+});
+
+document.getElementById('setting-haptic').addEventListener('change', e => {
+  STATE.haptic = e.target.checked;
+  saveState();
+});
+
+// Voice upload
+document.getElementById('upload-voice').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    STATE.voiceSample = ev.target.result;
+    saveState();
+    updateVoicePreview();
+    toast('Voice sample saved locally.');
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('btn-delete-voice').addEventListener('click', () => {
+  STATE.voiceSample = null;
+  saveState();
+  updateVoicePreview();
+  toast('Voice sample deleted.');
+});
+
+function updateVoicePreview() {
+  const previewRow = document.getElementById('voice-preview-row');
+  const previewAudio = document.getElementById('voice-preview');
+  const deleteBtn = document.getElementById('btn-delete-voice');
+  if (STATE.voiceSample) {
+    previewRow.classList.remove('hidden');
+    previewAudio.src = STATE.voiceSample;
+    deleteBtn.style.display = 'flex';
+  } else {
+    previewRow.classList.add('hidden');
+    previewAudio.src = '';
+    deleteBtn.style.display = 'none';
+  }
+}
+
+// Export
+document.getElementById('btn-export').addEventListener('click', () => {
+  const exportData = {
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    note: 'Audio files are not included in this export due to size constraints. Re-upload audio files manually after import.',
+    outputMode: STATE.outputMode,
+    theme: STATE.theme,
+    ttsVolume: STATE.ttsVolume,
+    ttsRate: STATE.ttsRate,
+    ttsVoiceURI: STATE.ttsVoiceURI,
+    haptic: STATE.haptic,
+    customBoards: STATE.customBoards,
+    trendingData: STATE.trendingData
+  };
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `talkboard-export-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Data exported! Audio files not included.');
+});
+
+// Import
+document.getElementById('import-file').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const ok = await showConfirm('Import will overwrite your current custom boards and settings. Continue?');
+  if (!ok) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.customBoards) STATE.customBoards = data.customBoards;
+      if (data.trendingData) STATE.trendingData = data.trendingData;
+      if (data.outputMode) STATE.outputMode = data.outputMode;
+      if (data.theme) { STATE.theme = data.theme; applyTheme(data.theme); }
+      if (data.ttsVolume !== undefined) STATE.ttsVolume = data.ttsVolume;
+      if (data.ttsRate !== undefined) STATE.ttsRate = data.ttsRate;
+      if (data.ttsVoiceURI) STATE.ttsVoiceURI = data.ttsVoiceURI;
+      if (data.haptic !== undefined) STATE.haptic = data.haptic;
+      saveState();
+      renderAll();
+      closeSettings();
+      toast('Data imported successfully!');
+    } catch(err) {
+      toast('Import failed: invalid file.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+// Restore defaults
+document.getElementById('btn-restore').addEventListener('click', async () => {
+  const ok = await showConfirm('Restore Defaults will delete ALL custom boards, tiles, trends, and settings. This cannot be undone. Continue?');
+  if (!ok) return;
+  localStorage.removeItem(STORAGE_KEY);
+  STATE = {
+    isLocked: true,
+    currentTab: 'home',
+    currentBoardId: 'home',
+    outputMode: 'tts',
+    theme: 'light',
+    ttsVolume: 1,
+    ttsRate: 1,
+    ttsVoiceURI: '',
+    haptic: true,
+    customBoards: [],
+    trendingData: {},
+    voiceSample: null,
+    message: []
+  };
+  applyTheme('light');
+  closeSettings();
+  applyLockState();
+  renderAll();
+  toast('Restored to defaults.');
+});
+
+// Trending reset
+document.getElementById('btn-reset-trending').addEventListener('click', async () => {
+  const ok = await showConfirm('Reset all trending data? This cannot be undone.');
+  if (!ok) return;
+  STATE.trendingData = {};
+  saveState();
+  renderTrending(document.querySelector('.filter-btn.active')?.dataset.period || 'day');
+  toast('Trending data reset.');
+});
+
+// ============================
+// TILE MODAL
+// ============================
+
+const EMOJI_OPTIONS = ['😊','❤️','👍','🍎','🏠','🎵','💧','🎮','📖','✋','🚗','⭐','🌟','🎉','🌈','🐶','🐱','🦁','🍕','🍦','⚽','🎨','🚀','🌙','☀️','❓','✅','❌','🆘','🔴','🟢','🔵'];
+const COLOR_OPTIONS = [
+  {name:'blue',hex:'#1976D2'},{name:'green',hex:'#388E3C'},{name:'orange',hex:'#F57C00'},
+  {name:'purple',hex:'#7B1FA2'},{name:'red',hex:'#C62828'},{name:'teal',hex:'#00796B'},
+  {name:'pink',hex:'#AD1457'},{name:'yellow',hex:'#F9A825'},{name:'',hex:'#9E9E9E'}
+];
+const BOARD_EMOJIS = ['⭐','📋','❤️','🎮','🍎','🏠','🎵','📚','💬','🌟','🎨','🌈','🚀','🏃','💡','🎯'];
+
+let tileModalData = { tile: null, board: null };
+
+function openTileModal(tile, board) {
+  tileModalData = { tile, board };
+  const isNew = !tile;
+  document.getElementById('tile-modal-title').textContent = isNew ? '➕ Add Tile' : '✏️ Edit Tile';
+  document.getElementById('tile-label-input').value = isNew ? '' : tile.label;
+  document.getElementById('tile-custom-emoji').value = '';
+  document.getElementById('tile-delete-btn').classList.toggle('hidden', isNew);
+
+  // Emoji picker
+  const ep = document.getElementById('emoji-picker');
+  ep.innerHTML = '';
+  EMOJI_OPTIONS.forEach(em => {
+    const btn = document.createElement('button');
+    btn.className = 'emoji-opt' + ((!isNew && tile.emoji === em) ? ' selected' : '');
+    btn.setAttribute('role', 'option');
+    btn.setAttribute('aria-label', em);
+    btn.setAttribute('aria-selected', (!isNew && tile.emoji === em) ? 'true' : 'false');
+    btn.textContent = em;
+    btn.addEventListener('click', () => {
+      ep.querySelectorAll('.emoji-opt').forEach(b => { b.classList.remove('selected'); b.setAttribute('aria-selected','false'); });
+      btn.classList.add('selected');
+      btn.setAttribute('aria-selected', 'true');
+      document.getElementById('tile-custom-emoji').value = '';
+    });
+    ep.appendChild(btn);
+  });
+
+  // Color picker
+  const cp = document.getElementById('color-picker');
+  cp.innerHTML = '';
+  COLOR_OPTIONS.forEach(c => {
+    const sw = document.createElement('button');
+    sw.className = 'color-swatch' + ((!isNew && (tile.color||'') === c.name) ? ' selected' : '');
+    sw.style.background = c.hex;
+    sw.setAttribute('role', 'option');
+    sw.setAttribute('aria-label', c.name || 'None');
+    sw.setAttribute('aria-selected', (!isNew && (tile.color||'') === c.name) ? 'true' : 'false');
+    sw.dataset.color = c.name;
+    sw.addEventListener('click', () => {
+      cp.querySelectorAll('.color-swatch').forEach(b => { b.classList.remove('selected'); b.setAttribute('aria-selected','false'); });
+      sw.classList.add('selected');
+      sw.setAttribute('aria-selected', 'true');
+    });
+    cp.appendChild(sw);
+  });
+
+  // Reset audio upload
+  document.getElementById('tile-audio-upload').value = '';
+
+  openModal('tile-modal');
+}
+
+document.getElementById('tile-modal-close').addEventListener('click', () => closeModal('tile-modal'));
+document.getElementById('tile-cancel-btn').addEventListener('click', () => closeModal('tile-modal'));
+
+document.getElementById('tile-delete-btn').addEventListener('click', async () => {
+  const { tile, board } = tileModalData;
+  const ok = await showConfirm(`Delete tile "${tile.label}"? This cannot be undone.`);
+  if (!ok) return;
+  board.tiles = board.tiles.filter(t => t.id !== tile.id);
+  closeModal('tile-modal');
+  renderCurrentBoard();
+  saveState();
+  toast(`Tile "${tile.label}" deleted.`);
+});
+
+document.getElementById('tile-save-btn').addEventListener('click', async () => {
+  const { tile, board } = tileModalData;
+  const label = document.getElementById('tile-label-input').value.trim();
+  if (!label) { toast('Please enter a label.'); return; }
+
+  const selectedEmoji = document.querySelector('#emoji-picker .emoji-opt.selected');
+  const customEmoji = document.getElementById('tile-custom-emoji').value.trim();
+  const emoji = customEmoji || (selectedEmoji ? selectedEmoji.textContent : '💬');
+
+  const selectedColor = document.querySelector('#color-picker .color-swatch.selected');
+  const color = selectedColor ? selectedColor.dataset.color : '';
+
+  // Handle audio
+  let audioData = tile ? tile.audioData : null;
+  const audioFile = document.getElementById('tile-audio-upload').files[0];
+  if (audioFile) {
+    audioData = await new Promise(resolve => {
+      const r = new FileReader();
+      r.onload = e => resolve(e.target.result);
+      r.readAsDataURL(audioFile);
+    });
+  }
+
+  if (!tile) {
+    // New tile
+    const newTile = {
+      id: 'custom_' + Date.now(),
+      label, emoji, color, audioData
+    };
+    if (!board.tiles) board.tiles = [];
+    board.tiles.push(newTile);
+  } else {
+    // Edit
+    tile.label = label;
+    tile.emoji = emoji;
+    tile.color = color;
+    if (audioData) tile.audioData = audioData;
+  }
+
+  saveState();
+  closeModal('tile-modal');
+  renderCurrentBoard();
+  toast(tile ? 'Tile updated!' : 'Tile added!');
+});
+
+// ============================
+// BOARD MODAL
+// ============================
+
+function openBoardModal() {
+  document.getElementById('board-modal-title').textContent = '➕ New Board';
+  document.getElementById('board-name-input').value = '';
+  document.getElementById('board-custom-emoji').value = '';
+
+  const bep = document.getElementById('board-emoji-picker');
+  bep.innerHTML = '';
+  BOARD_EMOJIS.forEach(em => {
+    const btn = document.createElement('button');
+    btn.className = 'emoji-opt' + (em === '📋' ? ' selected' : '');
+    btn.setAttribute('role', 'option');
+    btn.setAttribute('aria-label', em);
+    btn.setAttribute('aria-selected', em === '📋' ? 'true' : 'false');
+    btn.textContent = em;
+    btn.addEventListener('click', () => {
+      bep.querySelectorAll('.emoji-opt').forEach(b => { b.classList.remove('selected'); b.setAttribute('aria-selected','false'); });
+      btn.classList.add('selected');
+      btn.setAttribute('aria-selected', 'true');
+    });
+    bep.appendChild(btn);
+  });
+
+  openModal('board-modal');
+}
+
+document.getElementById('btn-add-board').addEventListener('click', openBoardModal);
+document.getElementById('board-modal-close').addEventListener('click', () => closeModal('board-modal'));
+document.getElementById('board-cancel-btn').addEventListener('click', () => closeModal('board-modal'));
+
+document.getElementById('board-save-btn').addEventListener('click', () => {
+  const name = document.getElementById('board-name-input').value.trim();
+  if (!name) { toast('Please enter a board name.'); return; }
+
+  const selEmoji = document.querySelector('#board-emoji-picker .emoji-opt.selected');
+  const customEmoji = document.getElementById('board-custom-emoji').value.trim();
+  const icon = customEmoji || (selEmoji ? selEmoji.textContent : '📋');
+
+  const newBoard = {
+    id: 'board_' + Date.now(),
+    name,
+    icon,
+    isStandard: false,
+    tiles: []
+  };
+  STATE.customBoards.push(newBoard);
+  saveState();
+  closeModal('board-modal');
+  renderBoardNav();
+  selectBoard(newBoard.id);
+  toast(`Board "${name}" created!`);
+});
+
+// Add tile button (within board mgmt bar)
+document.getElementById('btn-add-tile').addEventListener('click', () => {
+  const board = getBoardById(STATE.currentBoardId);
+  if (!board || board.isStandard) {
+    toast('Standard boards cannot be edited. Create a custom board first.');
+    return;
+  }
+  openTileModal(null, board);
+});
+
+// ============================
+// TRENDING FILTERS
+// ============================
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderTrending(btn.dataset.period);
+  });
+});
+
+// ============================
+// KEYBOARD SHORTCUTS
+// ============================
+
+document.addEventListener('keydown', e => {
+  const tag = document.activeElement?.tagName;
+  const inInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+
+  // Close dialogs
+  if (e.key === 'Escape') {
+    const openModal2 = document.querySelector('.modal-overlay.open');
+    if (openModal2) { closeModal(openModal2.id); return; }
+    if (document.getElementById('settings-panel').classList.contains('open')) { closeSettings(); return; }
+    if (!inInput) { STATE.message = []; updateMessageBar(); }
+    return;
+  }
+
+  if (inInput) return; // Don't intercept when typing
+
+  if (e.key === 'Enter') {
+    const text = STATE.message.map(w => w.label).join(' ');
+    if (text) speakText(text);
+    return;
+  }
+
+  if (e.key === 'Backspace') {
+    STATE.message.pop();
+    updateMessageBar();
+    return;
+  }
+
+  if (e.key === 'u' || e.key === 'U') {
+    if (STATE.isLocked) openPinModal();
+    return;
+  }
+
+  if (!STATE.isLocked) {
+    if (e.key === 's' || e.key === 'S') { openSettings(); return; }
+    if (e.key === '1') { switchTab('home'); return; }
+    if (e.key === '2') { switchTab('trending'); return; }
+    if (e.key === '3') { switchTab('categories'); return; }
+  }
+});
+
+// ============================
+// RENDER ALL
+// ============================
+
+function renderAll() {
+  applyTheme(STATE.theme);
+  renderBoardNav();
+  renderCurrentBoard();
+  updateMessageBar();
+  applyLockState();
+  updateVoicePreview();
+}
+
+// ============================
+// SERVICE WORKER (PWA)
+// ============================
+
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+
+  const swCode = `
+const CACHE = 'talkboard-v2';
+const SHELL = ['./'];
+
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+});
+
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      if (cached) return cached;
+      return fetch(e.request).then(resp => {
+        if (resp && resp.status === 200) {
+          const clone = resp.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
         }
-      });
+        return resp;
+      }).catch(() => caches.match('./'));
+    })
+  );
+});
+`;
 
-      // Composer
-      speakMsgBtn.addEventListener("click", speakMessage);
-      clearMsgBtn.addEventListener("click", clearMessage);
-      backspaceBtn.addEventListener("click", backspaceWord);
+  const swBlob = new Blob([swCode], {type:'application/javascript'});
+  const swUrl = URL.createObjectURL(swBlob);
+  navigator.serviceWorker.register(swUrl).catch(e => console.warn('SW registration failed:', e));
+}
 
-      messageBox.addEventListener("input", () => {
-        state.message = messageBox.value || "";
-        scheduleSave();
-      });
+// ============================
+// BOOT
+// ============================
 
-      // Settings controls
-      document.querySelectorAll('[data-setting="outputMode"]').forEach(btn => {
-        btn.addEventListener("click", () => {
-          state.settings.outputMode = btn.dataset.value;
-          scheduleSave();
-          toastMsg("Output mode", state.settings.outputMode === "tts" ? "Text-to-Speech enabled." : "Audio mode enabled.", "⚙️");
-          updateSettingsUI();
-          render();
-        });
-      });
+(function init() {
+  loadState();
+  renderAll();
+  switchTab('home');
+  registerServiceWorker();
 
-      document.querySelectorAll('[data-setting="theme"]').forEach(btn => {
-        btn.addEventListener("click", () => {
-          setTheme(btn.dataset.value);
-          setupManifest();
-          toastMsg("Theme", btn.dataset.value === "dark" ? "Dark mode." : "Light mode.", "🎨");
-          updateSettingsUI();
-        });
-      });
+  // Load TTS voices
+  if ('speechSynthesis' in window) {
+    loadVoices();
+    speechSynthesis.addEventListener('voiceschanged', loadVoices);
+  }
 
-      volRange.addEventListener("input", () => {
-        state.settings.volume = Number(volRange.value);
-        scheduleSave();
-        updateSettingsUI();
-      });
-
-      rateRange.addEventListener("input", () => {
-        state.settings.rate = Number(rateRange.value);
-        scheduleSave();
-        updateSettingsUI();
-      });
-
-      voiceSelect.addEventListener("change", () => {
-        state.settings.voiceURI = voiceSelect.value || "";
-        scheduleSave();
-        toastMsg("Voice", "TTS voice updated.", "🗣️");
-      });
-
-      fallbackSwitch.addEventListener("click", () => {
-        state.settings.audioFallbackTTS = !state.settings.audioFallbackTTS;
-        scheduleSave();
-        updateSettingsUI();
-      });
-      fallbackSwitch.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fallbackSwitch.click(); }
-      });
-
-      hapticSwitch.addEventListener("click", () => {
-        if (!("vibrate" in navigator)) {
-          toastMsg("Not supported", "Vibration isn't supported on this device.", "📳");
-          state.settings.haptics = false;
-        } else {
-          state.settings.haptics = !state.settings.haptics;
-          if (state.settings.haptics) navigator.vibrate(15);
-        }
-        scheduleSave();
-        updateSettingsUI();
-      });
-      hapticSwitch.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); hapticSwitch.click(); }
-      });
-
-      hapticStrength.addEventListener("change", () => {
-        state.settings.hapticStrength = hapticStrength.value;
-        scheduleSave();
-        updateSettingsUI();
-        vibrateTap();
-      });
-
-      fallbackAudioInput.addEventListener("change", async () => {
-        if (!fallbackAudioInput.files || !fallbackAudioInput.files[0]) return;
-        const file = fallbackAudioInput.files[0];
-        const blob = new Blob([await file.arrayBuffer()], { type: file.type || "audio/*" });
-        await idb.set("fallbackAudio", blob);
-        toastMsg("Saved", "Fallback audio stored for Audio mode.", "🎵");
-        fallbackAudioInput.value = "";
-      });
-
-      // Lock keypad
-      keys.addEventListener("click", (e) => {
-        const k = e.target?.dataset?.key;
-        if (!k) return;
-        handlePinKey(k);
-      });
-
-      // Board editor
-      boardSaveBtn.addEventListener("click", saveBoardEdits);
-      boardDeleteBtn.addEventListener("click", async () => {
-        if (editingBoardId) await deleteBoard(editingBoardId);
-      });
-
-      // Tile editor
-      tileSaveBtn.addEventListener("click", saveTileEdits);
-      tileDeleteBtn.addEventListener("click", async () => {
-        const { boardId, tileId } = editingTile;
-        await deleteTile(boardId, tileId);
-      });
-      tileTestBtn.addEventListener("click", testTile);
-
-      // Data
-      exportBtn.addEventListener("click", exportData);
-      importFile.addEventListener("change", async () => {
-        if (!importFile.files || !importFile.files[0]) return;
-        await importData(importFile.files[0]);
-        importFile.value = "";
-      });
-      resetBtn.addEventListener("click", restoreDefaults);
-      clearTrendingBtn.addEventListener("click", clearTrending);
-
-      // PWA tools
-      downloadSwBtn.addEventListener("click", downloadSwFile);
-
-      // Network
-      window.addEventListener("online", () => { updateNetUI(); toastMsg("Online", "You are back online.", "🟢"); });
-      window.addEventListener("offline", () => { updateNetUI(); toastMsg("Offline", "You are offline. Cached features may still work.", "🔴"); });
-
-      // Keyboard shortcuts
-      document.addEventListener("keydown", (e) => {
-        const inDialog = document.querySelector("dialog[open]");
-        const activeEl = document.activeElement;
-        const typing = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || activeEl.isContentEditable);
-
-        // Esc: close dialogs or stop speech
-        if (e.key === "Escape") {
-          stopSpeech();
-          if (inDialog) { e.preventDefault(); inDialog.close(); return; }
-          // Clear message only if message box focused
-          if (activeEl === messageBox) { e.preventDefault(); clearMessage(); return; }
-          return;
-        }
-
-        if (typing) {
-          // keep shortcuts minimal while typing, except explicit combos
-          if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "s") {
-            e.preventDefault();
-            speakMessage();
-          }
-          return;
-        }
-
-        // / focus search (Home)
-        if (e.key === "/") {
-          e.preventDefault();
-          if (state.tab !== "home") setTab("home");
-          setTimeout(() => document.getElementById("searchInput")?.focus(), 0);
-          return;
-        }
-
-        // Alt tabs
-        if (e.altKey && e.key === "1") { e.preventDefault(); setTab("home"); return; }
-        if (e.altKey && e.key === "2") { e.preventDefault(); setTab("trending"); return; }
-        if (e.altKey && e.key === "3") { e.preventDefault(); setTab("categories"); return; }
-
-        // Ctrl+L lock/unlock
-        if (e.ctrlKey && e.key.toLowerCase() === "l") { e.preventDefault(); openLock(); return; }
-
-        // S open settings
-        if (!e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "s") {
-          e.preventDefault();
-          openDialog(settingsDlg);
-          return;
-        }
-
-        // Ctrl+Shift+S speak message
-        if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "s") {
-          e.preventDefault();
-          speakMessage();
-          return;
-        }
-
-        // Backspace undo word
-        if (e.key === "Backspace") {
-          e.preventDefault();
-          backspaceWord();
-          return;
-        }
-
-        // Enter/Space activates focused tile if it is a tile button (native handles click)
-      });
-
-      // ====== Init ======
-      async function init(){
-        // Theme + manifest
-        setTheme(state.settings.theme);
-        setupManifest();
-
-        // voices
-        loadVoices();
-
-        // initial net UI
-        updateNetUI();
-
-        // initial render
-        render();
-
-        // Service worker + install prompt
-        setupInstallPrompt();
-        await setupServiceWorker();
-
-        // Helpful first-run notice
-        if (!localStorage.getItem("talkboard.seen.v1")) {
-          localStorage.setItem("talkboard.seen.v1", "1");
-          toastMsg("Ready", "Tap tiles to speak. Unlock (Ctrl+L) to edit custom boards.", "✅");
-        }
-      }
-
-      init();
-    })();
-  </script>
-
-  <noscript>
-    <div style="padding:16px;font-family:system-ui;">
-      This app requires JavaScript to run.
-    </div>
-  </noscript>
+  // Handle speech synthesis iOS workaround
+  document.body.addEventListener('touchstart', () => {
+    if ('speechSynthesis' in window) {
+      const utt = new SpeechSynthesisUtterance('');
+      speechSynthesis.speak(utt);
+    }
+  }, { once: true, passive: true });
+})();
+</script>
 </body>
 </html>
